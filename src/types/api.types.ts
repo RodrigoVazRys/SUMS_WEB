@@ -141,3 +141,26 @@ export interface Vacunacion {
   dosis_id?: number | null
   fecha_aplicacion?: string | null
 }
+
+// ── Personas ──────────────────────────────────────────────────────────────────
+export interface Persona {
+  id: number
+  primer_nombre: string
+  segundo_nombre?: string | null
+  apellido_paterno: string
+  apellido_materno?: string | null
+  fecha_nacimiento: string
+  edad: number
+  sexo: string                        // 'masculino' | 'femenino'
+  alfabetizacion?: boolean | null
+  estado_civil_id?: number | null
+  lengua_id?: number | null
+  escolaridad_id?: number | null
+  ocupacion_id?: number | null
+  ocupacion_texto?: string | null
+  ingreso_salarial_id?: number | null
+  cuenta_seguridad_social?: boolean | null
+  presenta_discapacidad?: boolean | null
+  tipo_discapacidad?: string | null
+  fecha_registro?: string | null
+}

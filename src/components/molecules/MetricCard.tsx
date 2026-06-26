@@ -35,7 +35,9 @@ export function MetricCard({
     <article
       id={`metric-card-${id}`}
       className={[
-        'bg-white rounded-xl p-5 shadow-sm border transition-shadow duration-200 hover:shadow-md',
+        'bg-white rounded-xl p-5 shadow-sm border',
+        'hover:-translate-y-1 hover:shadow-md',
+        'transition-all duration-200 cursor-default',
         alert ? 'border-amber-200 bg-amber-50/30' : 'border-gray-100',
       ].join(' ')}
     >

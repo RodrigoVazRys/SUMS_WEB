@@ -134,7 +134,7 @@ export function GestionUsuariosPage() {
         })}
       </div>
 
-      {/* ── Table ─────────────────────────────────────────────────── */}
+      {/* ── Table (md+) + Mobile Cards (< md) ─────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
           <Users size={16} className="text-primary" />
@@ -148,71 +148,124 @@ export function GestionUsuariosPage() {
             <Loader2 size={24} className="animate-spin text-primary" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">ID</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Usuario</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Registro</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {users.map((u) => {
-                  const rol = rolInfo(u.rol_id)
-                  return (
-                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-5 py-3.5 text-xs text-gray-400 font-mono">#{u.id}</td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <User size={13} className="text-primary" />
+          <>
+            {/* ── Tabla — visible en md+ ──────────────────────────────── */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">ID</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Usuario</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Registro</th>
+                    <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {users.map((u) => {
+                    const rol = rolInfo(u.rol_id)
+                    return (
+                      <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-5 py-3.5 text-xs text-gray-400 font-mono">#{u.id}</td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <User size={13} className="text-primary" />
+                            </div>
+                            <span className="text-sm font-medium text-gray-900">{u.nombre_usuario}</span>
                           </div>
-                          <span className="text-sm font-medium text-gray-900">{u.nombre_usuario}</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${rol.color}`}
-                          style={u.rol_id === 1 ? { backgroundColor: '#fdf2f4', color: '#691C32' } : undefined}
-                        >
-                          {rol.label}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${u.activo !== false ? 'text-green-600' : 'text-gray-400'}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${u.activo !== false ? 'bg-green-500' : 'bg-gray-300'}`} />
-                          {u.activo !== false ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-xs text-gray-500">
-                        {u.fecha_registro ? new Date(u.fecha_registro).toLocaleDateString('es-MX') : '—'}
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <button
-                          onClick={() => { setEditingUser(u); setNewRolId(u.rol_id) }}
-                          className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary-dark font-medium transition-colors px-2 py-1 rounded hover:bg-primary/5"
-                        >
-                          <Pencil size={12} />
-                          Cambiar Rol
-                        </button>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${rol.color}`}
+                            style={u.rol_id === 1 ? { backgroundColor: '#fdf2f4', color: '#691C32' } : undefined}
+                          >
+                            {rol.label}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${u.activo !== false ? 'text-green-600' : 'text-gray-400'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${u.activo !== false ? 'bg-green-500' : 'bg-gray-300'}`} />
+                            {u.activo !== false ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-xs text-gray-500">
+                          {u.fecha_registro ? new Date(u.fecha_registro).toLocaleDateString('es-MX') : '—'}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <button
+                            onClick={() => { setEditingUser(u); setNewRolId(u.rol_id) }}
+                            className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary-dark font-medium transition-colors px-2 py-1 rounded hover:bg-primary/5"
+                          >
+                            <Pencil size={12} />
+                            Cambiar Rol
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  {users.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-10 text-center text-sm text-gray-400">
+                        No hay usuarios registrados.
                       </td>
                     </tr>
-                  )
-                })}
-                {users.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-sm text-gray-400">
-                      No hay usuarios registrados.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* ── Tarjetas móviles — visible en < md ─────────────────── */}
+            <div className="block md:hidden divide-y divide-gray-100">
+              {users.length === 0 && (
+                <p className="px-5 py-10 text-center text-sm text-gray-400">
+                  No hay usuarios registrados.
+                </p>
+              )}
+              {users.map((u) => {
+                const rol = rolInfo(u.rol_id)
+                return (
+                  <div key={u.id} className="p-4 space-y-3">
+                    {/* Fila superior: avatar + nombre + badge de rol */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <User size={16} className="text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm truncate">{u.nombre_usuario}</p>
+                        <p className="text-xs text-gray-400 font-mono">#{u.id}</p>
+                      </div>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold flex-shrink-0 ${rol.color}`}
+                        style={u.rol_id === 1 ? { backgroundColor: '#fdf2f4', color: '#691C32' } : undefined}
+                      >
+                        {rol.label}
+                      </span>
+                    </div>
+                    {/* Fila media: estado + fecha */}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={`flex items-center gap-1.5 font-medium ${u.activo !== false ? 'text-green-600' : 'text-gray-400'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${u.activo !== false ? 'bg-green-500' : 'bg-gray-300'}`} />
+                        {u.activo !== false ? 'Activo' : 'Inactivo'}
+                      </span>
+                      <span className="text-gray-400">
+                        {u.fecha_registro ? new Date(u.fecha_registro).toLocaleDateString('es-MX') : '—'}
+                      </span>
+                    </div>
+                    {/* Botón de acción — ancho completo para uso táctil */}
+                    <button
+                      onClick={() => { setEditingUser(u); setNewRolId(u.rol_id) }}
+                      className="w-full flex items-center justify-center gap-2 text-sm text-primary border border-primary/25 rounded-lg py-2.5 hover:bg-primary/5 active:bg-primary/10 transition-colors font-medium"
+                    >
+                      <Pencil size={14} />
+                      Cambiar Rol
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </>
         )}
       </div>
 

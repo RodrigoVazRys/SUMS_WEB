@@ -18,6 +18,7 @@ import type {
   VacunacionPorRangoEdadDTO,
   Vacunacion,
   VacunaDosisAplicacionDTO,
+  Persona,
 } from '../types/api.types'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -136,6 +137,20 @@ export async function getVacunacionesPorRangoEdad(): Promise<VacunacionPorRangoE
 
 export async function getVacunacionesPorVacunaDosis(): Promise<VacunaDosisAplicacionDTO[]> {
   const { data } = await api.get<VacunaDosisAplicacionDTO[]>('/vacunaciones/por-vacuna-dosis')
+  return data
+}
+
+// ─── Personas endpoints ───────────────────────────────────────────────────────
+export async function getPersonas(): Promise<Persona[]> {
+  const { data } = await api.get<Persona[]>('/personas')
+  return data
+}
+
+// Versión con parámetro completo ('masculino'|'femenino') según respuesta real de la API
+export async function getVacunacionesPorGenero(
+  genero: 'masculino' | 'femenino',
+): Promise<VacunacionPorSexoDTO[]> {
+  const { data } = await api.get<VacunacionPorSexoDTO[]>(`/vacunaciones/por-sexo/${genero}`)
   return data
 }
 

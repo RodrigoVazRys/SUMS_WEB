@@ -1,5 +1,8 @@
 // ─── Organism: Sidebar ────────────────────────────────────────────────────────
 // Panel de navegación lateral con RBAC.
+// v2: Posición fixed, se muestra/oculta via translateX con transición suave.
+//     - isOpen=true  → translate-x-0 (visible)
+//     - isOpen=false → -translate-x-full (fuera de pantalla)
 // Links de gestión (Usuarios, Centros de Salud) solo visibles para SuperAdmin.
 
 import { LayoutDashboard, ScanLine, LogOut, Users, Building2 } from 'lucide-react'
@@ -19,43 +22,64 @@ const SUPERADMIN_NAV_ITEMS = [
 
 export interface SidebarProps {
   onLogout: () => void
+  isOpen:   boolean
 }
 
-export function Sidebar({ onLogout }: SidebarProps) {
+export function Sidebar({ onLogout, isOpen }: SidebarProps) {
   const { user } = useAuth()
   const isSuperAdmin = user?.role === 'SuperAdmin'
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-primary flex flex-col shadow-xl z-10">
-      {/* Logo */}
-      <div className="px-4 py-5 border-b border-white/10">
-        <Logo size="sm" />
+    <aside
+      className={[
+        // Posicionamiento y dimensiones
+        'fixed top-0 left-0 h-full w-64 z-40',
+        // Colores institucionales
+        'bg-[#006657] text-white',
+        // Layout interno
+        'flex flex-col justify-between shadow-2xl',
+        // Transición suave de deslizamiento
+        'transition-transform duration-300 ease-in-out',
+        // Estado: visible u oculto
+        isOpen ? 'translate-x-0' : '-translate-x-full',
+      ].join(' ')}
+      aria-hidden={!isOpen}
+    >
+      {/* ── Parte superior: logo + navegación ─────────────────────────── */}
+      <div className="flex flex-col overflow-hidden">
+        {/* Logo */}
+        <div className="px-4 py-5 border-b border-white/10 flex-shrink-0">
+          <Logo size="sm" />
+        </div>
+
+        {/* Navigation */}
+        <nav
+          className="flex-1 px-3 py-4 space-y-1 overflow-y-auto"
+          aria-label="Navegación principal"
+        >
+          {/* Rutas base (SuperAdmin + Admin) */}
+          {BASE_NAV_ITEMS.map((item) => (
+            <NavItem key={item.to} to={item.to} label={item.label} icon={item.icon} />
+          ))}
+
+          {/* Rutas exclusivas de SuperAdmin */}
+          {isSuperAdmin && (
+            <>
+              <div className="pt-3 pb-1 px-4">
+                <p className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">
+                  Administración
+                </p>
+              </div>
+              {SUPERADMIN_NAV_ITEMS.map((item) => (
+                <NavItem key={item.to} to={item.to} label={item.label} icon={item.icon} />
+              ))}
+            </>
+          )}
+        </nav>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto" aria-label="Navegación principal">
-        {/* Rutas base (SuperAdmin + Admin) */}
-        {BASE_NAV_ITEMS.map((item) => (
-          <NavItem key={item.to} to={item.to} label={item.label} icon={item.icon} />
-        ))}
-
-        {/* Rutas exclusivas de SuperAdmin */}
-        {isSuperAdmin && (
-          <>
-            <div className="pt-3 pb-1 px-4">
-              <p className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">
-                Administración
-              </p>
-            </div>
-            {SUPERADMIN_NAV_ITEMS.map((item) => (
-              <NavItem key={item.to} to={item.to} label={item.label} icon={item.icon} />
-            ))}
-          </>
-        )}
-      </nav>
-
-      {/* Bottom: Logout */}
-      <div className="px-3 py-4 border-t border-white/10">
+      {/* ── Parte inferior: Cerrar sesión ──────────────────────────────── */}
+      <div className="px-3 py-4 border-t border-white/10 flex-shrink-0">
         <button
           onClick={onLogout}
           className={[
@@ -63,6 +87,7 @@ export function Sidebar({ onLogout }: SidebarProps) {
             'text-white/70 hover:text-red-300 hover:bg-red-500/10',
             'transition-all duration-200',
           ].join(' ')}
+          type="button"
         >
           <LogOut size={18} strokeWidth={1.8} />
           <span>Cerrar Sesión</span>
