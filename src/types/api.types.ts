@@ -142,6 +142,197 @@ export interface Vacunacion {
   fecha_aplicacion?: string | null
 }
 
+// ── Estadísticas — Operación ──────────────────────────────────────────────────
+export interface ResumenGeneral {
+  total_cedulas:         number
+  total_personas:        number
+  total_viviendas:       number
+  total_nucleos:         number
+  total_dosis:           number
+  total_entrevistadores: number
+  cedulas_hoy:           number
+  cedulas_mes:           number
+}
+
+export interface ProductividadEntrevistador {
+  id_entrevistador: number
+  nombre:           string
+  alta:             string
+  total:            number
+  hoy:              number
+  semana:           number
+  mes:              number
+  ultima_actividad: string | null
+}
+
+export interface CedulaSerieItem {
+  periodo: string
+  total:   number
+}
+
+export interface CedulaEstadoItem {
+  estado: string
+  total:  number
+}
+
+export interface CedulaPorUnidadItem {
+  id_unidad_salud: number
+  nombre:          string
+  total:           number
+}
+
+export interface CedulaPorLocalidadItem {
+  localidad: string
+  total:     number
+}
+
+export interface CedulaPorColoniaItem {
+  colonia: string
+  total:   number
+}
+
+export interface NucleoTamanoItem {
+  tamano: number
+  total:  number
+}
+
+// ── Estadísticas — Demografía ─────────────────────────────────────────────────
+export interface PiramideItem {
+  rango_edad: string
+  sexo:       string
+  total:      number
+}
+
+export interface GeneroItem {
+  sexo:  string
+  total: number
+}
+
+export interface EscolaridadItem {
+  nombre: string
+  total:  number
+}
+
+export interface AlfabetizacionData {
+  alfabetizados:    number
+  no_alfabetizados: number
+  sin_dato:         number
+}
+
+export interface LenguaIndigenaItem {
+  lengua: string
+  total:  number
+}
+
+export interface IngresoItem {
+  rango: string
+  total: number
+}
+
+export interface OcupacionItem {
+  nombre: string
+  total:  number
+}
+
+export interface EstadoCivilItem {
+  nombre: string
+  total:  number
+}
+
+// ── Estadísticas — Salud ──────────────────────────────────────────────────────
+export interface EnfermedadCronicaItem {
+  nombre:   string
+  personas: number
+}
+
+export interface ToxicomaniaItem {
+  nombre:   string
+  personas: number
+}
+
+export interface DiscapacidadData {
+  resumen: {
+    con_discapacidad:  number
+    sin_discapacidad:  number
+  }
+  por_tipo: Array<{ tipo: string; total: number }>
+}
+
+export interface SaludPreventivaData {
+  resumen: {
+    tamizaje_cervico_uterino: number
+    tamizaje_cancer_mama:     number
+    con_atencion_embarazo:    number
+    total_registros:          number
+  }
+  por_atencion_embarazo: Array<{ nombre: string; total: number }>
+}
+
+export interface SeguridadSocialData {
+  con_seguridad: number
+  sin_seguridad: number
+}
+
+export interface AlimentacionData {
+  promedio_dias_proteina:         number
+  promedio_dias_frutas_verduras:  number
+  promedio_dias_cereales:         number
+  total_registros:                number
+}
+
+export interface ServicioSaludItem {
+  nombre: string
+  total:  number
+}
+
+export interface HigieneBucodentalData {
+  diaria:    number
+  no_diaria: number
+  sin_dato:  number
+  total:     number
+}
+
+export interface PiramideVacunaItem {
+  rango_edad: string
+  sexo:       string
+  total:      number
+}
+
+// ── Estadísticas — Vivienda ───────────────────────────────────────────────────
+export interface ViviendaServiciosData {
+  total_viviendas:      number
+  con_agua:             number
+  sin_agua:             number
+  con_luz:              number
+  sin_luz:              number
+  con_alcantarillado:   number
+  sin_alcantarillado:   number
+  con_fosa_septica:     number
+}
+
+export interface HacinamientoData {
+  viviendas_hacinadas:        number
+  viviendas_no_hacinadas:     number
+  sin_dato:                   number
+  promedio_personas_por_cuarto: number
+}
+
+export interface MaterialesRiesgoData {
+  piso_tierra:          number
+  cocina_con_lena:      number
+  cocina_en_dormitorio: number
+  total_viviendas:      number
+}
+
+export interface AnimalesData {
+  por_animal: Array<{ nombre: string; total: number }>
+  mascotas: {
+    con_perros_gatos_dentro: number
+    mascotas_sin_vacunar:    number
+    mascotas_esterilizadas:  number
+  }
+}
+
 // ── Personas ──────────────────────────────────────────────────────────────────
 export interface Persona {
   id: number

@@ -2,8 +2,8 @@
 // Panel compuesto de dos visualizaciones 100% Flexbox + Tailwind:
 //
 //  IZQUIERDA — Pirámide Demográfica
-//    Fuente: GET /personas → procesa { edad, sexo } en useMemo
-//    18 rangos de edad (85+ → 0-4), barras dobles por sexo
+//    Fuente: GET /estadisticas/demografia/piramide
+//    6 rangos de edad (60+ → 0-4), barras dobles por sexo
 //    Tooltip hover con conteo exacto
 //    Tarjetas resumen: % Hombres / % Mujeres
 //
@@ -13,30 +13,13 @@
 //    Totales acumulados por género
 //
 // Responsive: side-by-side en lg+, stacked en móvil.
-// Fallback: datos simulados de Chiapas si la API está vacía.
 
 import { useEffect, useState, useMemo } from 'react'
-import { Users2, Syringe, AlertCircle } from 'lucide-react'
-import { getPersonas, getVacunacionesPorGenero } from '../../services/api'
-import type { Persona, VacunacionPorSexoDTO } from '../../types/api.types'
+import { Users2, Syringe } from 'lucide-react'
+import { getDemografiaPiramide, getVacunacionesPorGenero } from '../../services/api'
+import type { PiramideItem, VacunacionPorSexoDTO } from '../../types/api.types'
 
-// ─── Etiquetas de rangos (orden: tope → base = 85+ → 0-4) ────────────────────
-const AGE_LABELS = [
-  '85+',   '80-84', '75-79', '70-74', '65-69', '60-64',
-  '55-59', '50-54', '45-49', '40-44', '35-39', '30-34',
-  '25-29', '20-24', '15-19', '10-14', '5-9',   '0-4',
-]
-
-/** Convierte edad numérica al índice de fila (0 = 85+, 17 = 0-4) */
-function ageToRowIndex(edad: number): number {
-  if (edad >= 85) return 0
-  return 17 - Math.min(Math.floor(edad / 5), 16)
-}
-
-// ─── Datos de respaldo — distribución demográfica realista de Chiapas 2020 ────
-// Orden: índice 0=85+, 17=0-4
-const FALLBACK_H = [95,  155, 240, 360, 480, 610, 780, 920, 1100, 1280, 1450, 1640, 1820, 2000, 2180, 2380, 2540, 2700]
-const FALLBACK_F = [130, 200, 310, 430, 560, 710, 890, 1040, 1240, 1410, 1590, 1780, 1960, 2080, 2150, 2320, 2480, 2640]
+const AGE_LABELS = ['0-4', '5-14', '15-29', '30-44', '45-59', '60+']
 
 // ─── Abreviaciones para nombres de vacunas largos ─────────────────────────────
 function shortenVacuna(name: string): string {
@@ -54,30 +37,26 @@ const GREEN = '#006657'
 
 // ─────────────────────────────────────────────────────────────────────────────
 export function DemographicPyramid() {
-  const [personas,    setPersonas]    = useState<Persona[]>([])
+  const [piramide,    setPiramide]    = useState<PiramideItem[]>([])
   const [vacMasc,     setVacMasc]     = useState<VacunacionPorSexoDTO[]>([])
   const [vacFem,      setVacFem]      = useState<VacunacionPorSexoDTO[]>([])
   const [isLoading,   setIsLoading]   = useState(true)
-  const [isFallback,  setIsFallback]  = useState(false)
   const [hoveredRow,  setHoveredRow]  = useState<number | null>(null)
 
-  // ── Fetch paralelo de los tres endpoints ────────────────────────────────────
+  // ── Fetch paralelo de los tres endpoints reales ──────────────────────────────
   useEffect(() => {
     let cancelled = false
 
     async function fetchAll() {
       const [pRes, mRes, fRes] = await Promise.allSettled([
-        getPersonas(),
+        getDemografiaPiramide(),
         getVacunacionesPorGenero('masculino'),
         getVacunacionesPorGenero('femenino'),
       ])
 
       if (cancelled) return
 
-      const pData = pRes.status === 'fulfilled' ? pRes.value : []
-      setPersonas(pData)
-      if (pData.length === 0) setIsFallback(true)
-
+      if (pRes.status === 'fulfilled') setPiramide(pRes.value)
       if (mRes.status === 'fulfilled') setVacMasc(mRes.value)
       if (fRes.status === 'fulfilled') setVacFem(fRes.value)
 
@@ -88,20 +67,24 @@ export function DemographicPyramid() {
     return () => { cancelled = true }
   }, [])
 
+  // Total personas en la pirámide
+  const totalPersonas = useMemo(() => {
+    return piramide.reduce((sum, item) => sum + item.total, 0)
+  }, [piramide])
+
   // ── Pirámide: agrupa personas por rango de edad y sexo ──────────────────────
   const { hArr, fArr } = useMemo(() => {
-    if (isFallback || personas.length === 0) {
-      return { hArr: FALLBACK_H, fArr: FALLBACK_F }
-    }
-    const h = new Array<number>(18).fill(0)
-    const f = new Array<number>(18).fill(0)
-    for (const p of personas) {
-      const idx = ageToRowIndex(p.edad ?? 0)
-      if (p.sexo === 'masculino') h[idx]++
-      else if (p.sexo === 'femenino') f[idx]++
+    const h = new Array<number>(AGE_LABELS.length).fill(0)
+    const f = new Array<number>(AGE_LABELS.length).fill(0)
+    for (const item of piramide) {
+      const idx = AGE_LABELS.indexOf(item.rango_edad)
+      if (idx !== -1) {
+        if (item.sexo === 'masculino') h[idx] += item.total
+        else if (item.sexo === 'femenino') f[idx] += item.total
+      }
     }
     return { hArr: h, fArr: f }
-  }, [personas, isFallback])
+  }, [piramide])
 
   const maxPyr = useMemo(() => Math.max(...hArr, ...fArr, 1), [hArr, fArr])
 
@@ -172,18 +155,9 @@ export function DemographicPyramid() {
             Análisis Demográfico y Vacunación
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            {isFallback
-              ? 'Distribución estimada • La API no retornó personas'
-              : `${personas.length.toLocaleString('es-MX')} personas registradas`
-            }
+            {totalPersonas.toLocaleString('es-MX')} personas registradas
           </p>
         </div>
-        {isFallback && (
-          <span className="inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-600 border border-amber-200 px-2.5 py-1 rounded-full font-semibold">
-            <AlertCircle size={11} />
-            Datos simulados (Chiapas)
-          </span>
-        )}
       </div>
 
       {/* ── Contenido: 2 columnas en lg+, 1 columna en móvil ─────────── */}
@@ -223,7 +197,8 @@ export function DemographicPyramid() {
 
           {/* Filas de la pirámide */}
           <div className="space-y-px">
-            {AGE_LABELS.map((label, idx) => {
+            {[...AGE_LABELS].reverse().map((label) => {
+              const idx = AGE_LABELS.indexOf(label)
               const h    = hArr[idx]
               const f    = fArr[idx]
               const hPct = (h / maxPyr) * 100

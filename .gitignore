@@ -7,3 +7,4 @@ dist-ssr/
 .DS_Store
 *.log
 .env 
+public/web/estadisticos_sums.md

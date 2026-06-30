@@ -1,11 +1,8 @@
 // ─── Organism: Sidebar ────────────────────────────────────────────────────────
 // Panel de navegación lateral con RBAC.
-// v2: Posición fixed, se muestra/oculta via translateX con transición suave.
-//     - isOpen=true  → translate-x-0 (visible)
-//     - isOpen=false → -translate-x-full (fuera de pantalla)
-// Links de gestión (Usuarios, Centros de Salud) solo visibles para SuperAdmin.
+// v3: Sección "Análisis" con 4 módulos de estadísticas (Admin + SuperAdmin).
 
-import { LayoutDashboard, ScanLine, LogOut, Users, Building2 } from 'lucide-react'
+import { LayoutDashboard, ScanLine, LogOut, Users, Building2, Activity, Users2, HeartPulse, Home, BarChart2 } from 'lucide-react'
 import { Logo } from '../atoms/Logo'
 import { NavItem } from '../molecules/NavItem'
 import { useAuth } from '../../contexts/AuthContext'
@@ -15,10 +12,25 @@ const BASE_NAV_ITEMS = [
   { to: '/captura-ocr', label: 'Captura Cédulas', icon: ScanLine        },
 ]
 
+const ANALYTICS_NAV_ITEMS = [
+  { to: '/estadisticas/operacion',  label: 'Operación',  icon: Activity    },
+  { to: '/estadisticas/demografia', label: 'Demografía', icon: Users2      },
+  { to: '/estadisticas/salud',      label: 'Salud',      icon: HeartPulse  },
+  { to: '/estadisticas/vivienda',   label: 'Vivienda',   icon: Home        },
+]
+
 const SUPERADMIN_NAV_ITEMS = [
   { to: '/gestion-usuarios', label: 'Gestión de Usuarios', icon: Users      },
   { to: '/centros-salud',    label: 'Centros de Salud',    icon: Building2  },
 ]
+
+function NavSectionLabel({ label }: { label: string }) {
+  return (
+    <div className="pt-3 pb-1 px-4">
+      <p className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">{label}</p>
+    </div>
+  )
+}
 
 export interface SidebarProps {
   onLogout: () => void
@@ -32,15 +44,10 @@ export function Sidebar({ onLogout, isOpen }: SidebarProps) {
   return (
     <aside
       className={[
-        // Posicionamiento y dimensiones
         'fixed top-0 left-0 h-full w-64 z-40',
-        // Colores institucionales
         'bg-[#006657] text-white',
-        // Layout interno
         'flex flex-col justify-between shadow-2xl',
-        // Transición suave de deslizamiento
         'transition-transform duration-300 ease-in-out',
-        // Estado: visible u oculto
         isOpen ? 'translate-x-0' : '-translate-x-full',
       ].join(' ')}
       aria-hidden={!isOpen}
@@ -57,19 +64,25 @@ export function Sidebar({ onLogout, isOpen }: SidebarProps) {
           className="flex-1 px-3 py-4 space-y-1 overflow-y-auto"
           aria-label="Navegación principal"
         >
-          {/* Rutas base (SuperAdmin + Admin) */}
+          {/* Rutas base */}
           {BASE_NAV_ITEMS.map((item) => (
+            <NavItem key={item.to} to={item.to} label={item.label} icon={item.icon} />
+          ))}
+
+          {/* Sección Análisis (Admin + SuperAdmin) */}
+          <NavSectionLabel label="Análisis" />
+          <div className="flex items-center gap-2 px-4 py-1 mb-0.5">
+            <BarChart2 size={12} className="text-white/30" />
+            <span className="text-[10px] text-white/30">Estadísticas SUMS</span>
+          </div>
+          {ANALYTICS_NAV_ITEMS.map((item) => (
             <NavItem key={item.to} to={item.to} label={item.label} icon={item.icon} />
           ))}
 
           {/* Rutas exclusivas de SuperAdmin */}
           {isSuperAdmin && (
             <>
-              <div className="pt-3 pb-1 px-4">
-                <p className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">
-                  Administración
-                </p>
-              </div>
+              <NavSectionLabel label="Administración" />
               {SUPERADMIN_NAV_ITEMS.map((item) => (
                 <NavItem key={item.to} to={item.to} label={item.label} icon={item.icon} />
               ))}
