@@ -1,12 +1,12 @@
 // ─── Page: DashboardPage ──────────────────────────────────────────────────────
 // Responsabilidad única: componer los organismos del dashboard
 // y proveer metadatos de página (title, descripción).
-// Sin lógica de presentación — todo está en los organismos.
+// v2: Integra DemographicPyramid (pirámide poblacional + vacunación por sexo).
 
 import { useAuth } from '../contexts/AuthContext'
 import { MetricsGrid } from '../components/organisms/MetricsGrid'
 import { MonthlyTrendChart } from '../components/organisms/MonthlyTrendChart'
-import { DistributionChart } from '../components/organisms/DistributionChart'
+import { DemographicPyramid } from '../components/organisms/DemographicPyramid'
 import { TrendingUp, Calendar } from 'lucide-react'
 
 export function DashboardPage() {
@@ -20,32 +20,31 @@ export function DashboardPage() {
   })
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* ── Page Header ──────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between">
+    <div className="space-y-5 animate-fade-in">
+
+      {/* ── Page Header ──────────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Resumen Operativo</h2>
           <p className="text-sm text-gray-500 mt-0.5">Métricas y validaciones al día de hoy.</p>
         </div>
-        <div className="flex items-center gap-1.5 bg-white border border-gray-200 px-3 py-2 rounded-lg text-xs text-gray-600 shadow-sm">
+        <div className="flex items-center gap-1.5 bg-white border border-gray-200 px-3 py-2 rounded-lg text-xs text-gray-600 shadow-sm flex-shrink-0">
           <Calendar size={14} className="text-primary" aria-hidden="true" />
           <span className="capitalize">{today}</span>
         </div>
       </div>
 
-      {/* ── KPI Cards ────────────────────────────────────────────────── */}
+      {/* ── KPI Cards ────────────────────────────────────────────────────── */}
       <MetricsGrid />
 
-      {/* ── Charts ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <MonthlyTrendChart />
-        </div>
-        <DistributionChart />
-      </div>
+      {/* ── Gráfico de tendencia mensual — ancho completo ────────────────── */}
+      <MonthlyTrendChart />
 
-      {/* ── Session status strip ─────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-primary to-primary-dark rounded-xl p-4 flex items-center justify-between">
+      {/* ── Pirámide demográfica + Vacunación por sexo ─────────────────── */}
+      <DemographicPyramid />
+
+      {/* ── Session status strip ─────────────────────────────────────────── */}
+      <div className="bg-gradient-to-r from-[#006657] to-[#004f42] rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <p className="text-white/70 text-xs">Sesión activa como</p>
           <p className="text-white font-semibold text-sm">
@@ -53,7 +52,7 @@ export function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <TrendingUp size={18} className="text-gold" aria-hidden="true" />
+          <TrendingUp size={18} className="text-[#BC955C]" aria-hidden="true" />
           <span className="text-white/70 text-xs">Sistema operando con normalidad</span>
         </div>
       </div>

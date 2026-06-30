@@ -1,96 +1,140 @@
 // ─── Organism: MetricsGrid ────────────────────────────────────────────────────
-// KPI Cards alimentadas por la API SUMS en producción.
-// Fuentes: GET /vacunaciones (total dosis), GET /cedulas (total cédulas)
+// KPI Cards alimentadas por GET /estadisticas/resumen-general
+// Muestra 8 métricas reales: total_cedulas, total_personas, total_viviendas,
+// total_nucleos, total_dosis, total_entrevistadores, cedulas_hoy, cedulas_mes
 
 import { useEffect, useState } from 'react'
-import { ScanLine, Syringe, Clock, Activity } from 'lucide-react'
+import {
+  ScanLine,
+  Users,
+  Home,
+  Network,
+  Syringe,
+  UserCheck,
+  CalendarCheck,
+  CalendarDays,
+} from 'lucide-react'
 import { MetricCard } from '../molecules/MetricCard'
 import type { MetricCardProps } from '../molecules/MetricCard'
-import { getVacunaciones, getCedulas } from '../../services/api'
+import { getResumenGeneral } from '../../services/api'
+import type { ResumenGeneral } from '../../types/api.types'
 
-interface MetricsData {
-  totalCedulas: number
-  totalDosis: number
-}
-
-function buildMetrics(data: MetricsData): MetricCardProps[] {
+function buildMetrics(d: ResumenGeneral): MetricCardProps[] {
   return [
     {
-      id:           'cedulas',
+      id:           'cedulas-total',
       label:        'Cédulas Registradas',
-      value:        data.totalCedulas.toLocaleString('es-MX'),
+      value:        d.total_cedulas.toLocaleString('es-MX'),
       delta:        'Total acumulado',
       deltaVariant: 'success',
       deltaPrefix:  '✓ ',
       icon:         ScanLine,
-      iconColor:    'text-primary',
-      iconBg:       'bg-primary/10',
+      iconColor:    'text-[#006657]',
+      iconBg:       'bg-[#006657]/10',
     },
     {
-      id:           'dosis',
-      label:        'Dosis Aplicadas',
-      value:        data.totalDosis.toLocaleString('es-MX'),
-      delta:        'Vacunaciones',
+      id:           'personas',
+      label:        'Personas Censadas',
+      value:        d.total_personas.toLocaleString('es-MX'),
+      delta:        'En base de datos',
       deltaVariant: 'success',
-      deltaPrefix:  '↑ ',
-      icon:         Syringe,
+      deltaPrefix:  '● ',
+      icon:         Users,
       iconColor:    'text-blue-600',
       iconBg:       'bg-blue-50',
     },
     {
-      id:           'pendientes',
-      label:        'Sincronización',
-      value:        'En línea',
-      delta:        'API conectada',
+      id:           'viviendas',
+      label:        'Viviendas',
+      value:        d.total_viviendas.toLocaleString('es-MX'),
+      delta:        'Total registradas',
       deltaVariant: 'success',
-      deltaPrefix:  '● ',
-      icon:         Activity,
-      iconColor:    'text-primary',
-      iconBg:       'bg-primary/10',
+      deltaPrefix:  '↑ ',
+      icon:         Home,
+      iconColor:    'text-violet-600',
+      iconBg:       'bg-violet-50',
     },
     {
-      id:           'ocr-rate',
-      label:        'Estado del Sistema',
-      value:        'Operativo',
-      delta:        'Sin alertas',
+      id:           'nucleos',
+      label:        'Núcleos Familiares',
+      value:        d.total_nucleos.toLocaleString('es-MX'),
+      delta:        'Familias en padrón',
+      deltaVariant: 'success',
+      deltaPrefix:  '● ',
+      icon:         Network,
+      iconColor:    'text-orange-600',
+      iconBg:       'bg-orange-50',
+    },
+    {
+      id:           'dosis',
+      label:        'Dosis Aplicadas',
+      value:        d.total_dosis.toLocaleString('es-MX'),
+      delta:        'Vacunaciones',
+      deltaVariant: 'success',
+      deltaPrefix:  '↑ ',
+      icon:         Syringe,
+      iconColor:    'text-cyan-600',
+      iconBg:       'bg-cyan-50',
+    },
+    {
+      id:           'entrevistadores',
+      label:        'Entrevistadores',
+      value:        d.total_entrevistadores.toLocaleString('es-MX'),
+      delta:        'Personal activo',
       deltaVariant: 'success',
       deltaPrefix:  '✓ ',
-      icon:         Clock,
-      iconColor:    'text-amber-600',
-      iconBg:       'bg-amber-50',
+      icon:         UserCheck,
+      iconColor:    'text-[#BC955C]',
+      iconBg:       'bg-[#BC955C]/10',
+    },
+    {
+      id:           'cedulas-hoy',
+      label:        'Cédulas Hoy',
+      value:        d.cedulas_hoy.toLocaleString('es-MX'),
+      delta:        'Registros del día',
+      deltaVariant: d.cedulas_hoy > 0 ? 'success' : 'neutral',
+      deltaPrefix:  d.cedulas_hoy > 0 ? '↑ ' : '— ',
+      icon:         CalendarCheck,
+      iconColor:    'text-emerald-600',
+      iconBg:       'bg-emerald-50',
+    },
+    {
+      id:           'cedulas-mes',
+      label:        'Cédulas Este Mes',
+      value:        d.cedulas_mes.toLocaleString('es-MX'),
+      delta:        'Mes en curso',
+      deltaVariant: 'success',
+      deltaPrefix:  '● ',
+      icon:         CalendarDays,
+      iconColor:    'text-rose-600',
+      iconBg:       'bg-rose-50',
     },
   ]
 }
 
-// Skeleton placeholder metrics mientras carga
 const SKELETON_METRICS: MetricCardProps[] = [
-  { id: 'sk1', label: 'Cédulas Registradas', value: '...', delta: '—', deltaVariant: 'success', icon: ScanLine,  iconColor: 'text-primary',    iconBg: 'bg-primary/10' },
-  { id: 'sk2', label: 'Dosis Aplicadas',     value: '...', delta: '—', deltaVariant: 'success', icon: Syringe,   iconColor: 'text-blue-600',   iconBg: 'bg-blue-50'    },
-  { id: 'sk3', label: 'Sincronización',       value: '...', delta: '—', deltaVariant: 'success', icon: Activity,  iconColor: 'text-primary',    iconBg: 'bg-primary/10' },
-  { id: 'sk4', label: 'Estado del Sistema',   value: '...', delta: '—', deltaVariant: 'success', icon: Clock,     iconColor: 'text-amber-600',  iconBg: 'bg-amber-50'   },
+  { id: 'sk1', label: 'Cédulas Registradas', value: '...', delta: '—', deltaVariant: 'success', icon: ScanLine,      iconColor: 'text-[#006657]',  iconBg: 'bg-[#006657]/10' },
+  { id: 'sk2', label: 'Personas Censadas',   value: '...', delta: '—', deltaVariant: 'success', icon: Users,          iconColor: 'text-blue-600',   iconBg: 'bg-blue-50'      },
+  { id: 'sk3', label: 'Viviendas',           value: '...', delta: '—', deltaVariant: 'success', icon: Home,           iconColor: 'text-violet-600', iconBg: 'bg-violet-50'    },
+  { id: 'sk4', label: 'Núcleos Familiares',  value: '...', delta: '—', deltaVariant: 'success', icon: Network,        iconColor: 'text-orange-600', iconBg: 'bg-orange-50'    },
+  { id: 'sk5', label: 'Dosis Aplicadas',     value: '...', delta: '—', deltaVariant: 'success', icon: Syringe,        iconColor: 'text-cyan-600',   iconBg: 'bg-cyan-50'      },
+  { id: 'sk6', label: 'Entrevistadores',     value: '...', delta: '—', deltaVariant: 'success', icon: UserCheck,      iconColor: 'text-[#BC955C]',  iconBg: 'bg-[#BC955C]/10' },
+  { id: 'sk7', label: 'Cédulas Hoy',         value: '...', delta: '—', deltaVariant: 'success', icon: CalendarCheck,  iconColor: 'text-emerald-600',iconBg: 'bg-emerald-50'   },
+  { id: 'sk8', label: 'Cédulas Este Mes',    value: '...', delta: '—', deltaVariant: 'success', icon: CalendarDays,   iconColor: 'text-rose-600',   iconBg: 'bg-rose-50'      },
 ]
 
 export function MetricsGrid() {
-  const [metrics, setMetrics] = useState<MetricCardProps[]>(SKELETON_METRICS)
+  const [metrics, setMetrics]   = useState<MetricCardProps[]>(SKELETON_METRICS)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
     async function fetchMetrics() {
       try {
-        const [vacunaciones, cedulas] = await Promise.allSettled([
-          getVacunaciones(),
-          getCedulas(),
-        ])
-
-        if (cancelled) return
-
-        const totalDosis = vacunaciones.status === 'fulfilled' ? vacunaciones.value.length : 0
-        const totalCedulas = cedulas.status === 'fulfilled' ? cedulas.value.length : 0
-
-        setMetrics(buildMetrics({ totalCedulas, totalDosis }))
+        const resumen = await getResumenGeneral()
+        if (!cancelled) setMetrics(buildMetrics(resumen))
       } catch {
-        // Silently keep skeleton if both fail
+        // Silently keep skeleton if fetch fails
       } finally {
         if (!cancelled) setIsLoading(false)
       }
@@ -100,7 +144,7 @@ export function MetricsGrid() {
   }, [])
 
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 transition-opacity duration-300 ${isLoading ? 'opacity-60' : 'opacity-100'}`}>
+    <div className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 transition-opacity duration-300 ${isLoading ? 'opacity-60' : 'opacity-100'}`}>
       {metrics.map((metric) => (
         <MetricCard key={metric.id} {...metric} />
       ))}

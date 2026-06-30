@@ -149,7 +149,7 @@ export function CentrosSaludPage() {
         <Building2 size={40} className="text-white/20" />
       </div>
 
-      {/* ── Table ─────────────────────────────────────────────────── */}
+      {/* ── Table (md+) + Mobile Cards (< md) ─────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
           <Building2 size={16} className="text-primary" />
@@ -163,60 +163,117 @@ export function CentrosSaludPage() {
             <Loader2 size={24} className="animate-spin text-primary" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">ID</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">CLUES</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Distrito</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Núcleos</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {unidades.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-3.5 text-xs text-gray-400 font-mono">#{u.id}</td>
-                    <td className="px-5 py-3.5">
-                      <span className="text-xs font-mono bg-primary/5 text-primary px-2 py-0.5 rounded">
+          <>
+            {/* ── Tabla — visible en md+ ──────────────────────────────── */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">ID</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">CLUES</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Distrito</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Núcleos</th>
+                    <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {unidades.map((u) => (
+                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-5 py-3.5 text-xs text-gray-400 font-mono">#{u.id}</td>
+                      <td className="px-5 py-3.5">
+                        <span className="text-xs font-mono bg-primary/5 text-primary px-2 py-0.5 rounded">
+                          {u.clues}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 font-medium text-gray-900">{u.nombre}</td>
+                      <td className="px-5 py-3.5 text-gray-500">{u.distrito ?? '—'}</td>
+                      <td className="px-5 py-3.5 text-gray-500">{u.numero_nucleos ?? '—'}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openEdit(u)}
+                            className="flex items-center gap-1 text-xs text-primary hover:text-primary-dark font-medium px-2 py-1 rounded hover:bg-primary/5 transition-colors"
+                          >
+                            <Pencil size={12} />
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(u)}
+                            className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 size={12} />
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {unidades.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-10 text-center text-sm text-gray-400">
+                        No hay centros de salud registrados.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* ── Tarjetas móviles — visible en < md ─────────────────── */}
+            <div className="block md:hidden divide-y divide-gray-100">
+              {unidades.length === 0 && (
+                <p className="px-5 py-10 text-center text-sm text-gray-400">
+                  No hay centros de salud registrados.
+                </p>
+              )}
+              {unidades.map((u) => (
+                <div key={u.id} className="p-4 space-y-3">
+                  {/* Encabezado: CLUES + nombre */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Building2 size={16} className="text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 text-sm leading-tight">{u.nombre}</p>
+                      <span className="inline-block mt-0.5 text-[11px] font-mono bg-primary/5 text-primary px-2 py-0.5 rounded">
                         {u.clues}
                       </span>
-                    </td>
-                    <td className="px-5 py-3.5 font-medium text-gray-900">{u.nombre}</td>
-                    <td className="px-5 py-3.5 text-gray-500">{u.distrito ?? '—'}</td>
-                    <td className="px-5 py-3.5 text-gray-500">{u.numero_nucleos ?? '—'}</td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => openEdit(u)}
-                          className="flex items-center gap-1 text-xs text-primary hover:text-primary-dark font-medium px-2 py-1 rounded hover:bg-primary/5 transition-colors"
-                        >
-                          <Pencil size={12} />
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(u)}
-                          className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 size={12} />
-                          Eliminar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {unidades.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-sm text-gray-400">
-                      No hay centros de salud registrados.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                    <span className="text-xs text-gray-400 font-mono flex-shrink-0">#{u.id}</span>
+                  </div>
+                  {/* Metadatos: distrito + núcleos */}
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span>
+                      <span className="font-medium text-gray-600">Distrito: </span>
+                      {u.distrito ?? '—'}
+                    </span>
+                    <span>
+                      <span className="font-medium text-gray-600">Núcleos: </span>
+                      {u.numero_nucleos ?? '—'}
+                    </span>
+                  </div>
+                  {/* Acciones táctiles — ancho completo */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      onClick={() => openEdit(u)}
+                      className="flex items-center justify-center gap-2 text-sm text-primary border border-primary/25 rounded-lg py-2.5 hover:bg-primary/5 active:bg-primary/10 transition-colors font-medium"
+                    >
+                      <Pencil size={14} />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(u)}
+                      className="flex items-center justify-center gap-2 text-sm text-red-500 border border-red-200 rounded-lg py-2.5 hover:bg-red-50 active:bg-red-100 transition-colors font-medium"
+                    >
+                      <Trash2 size={14} />
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

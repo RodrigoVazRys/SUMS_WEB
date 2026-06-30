@@ -1,130 +1,146 @@
-// ─── Organism: MonthlyTrendChart (Histograma Doble — Hombres vs Mujeres) ──────
-// Gráfico de barras agrupadas con Recharts.
-// Consume: GET /vacunaciones/por-sexo/M y GET /vacunaciones/por-sexo/F
-// Cruza los datos por campo "vacuna" para el eje X.
+// ─── Organism: MonthlyTrendChart — Tendencia de Cédulas ───────────────────────
+// Gráfico de área/línea con Recharts.
+// Consume: GET /estadisticas/cedulas/serie?agrupar=dia|semana|mes
+// Incluye selector de agrupación interactivo.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
-  BarChart,
-  Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts'
-import { getVacunacionesPorSexo } from '../../services/api'
-import type { VacunacionPorSexoDTO } from '../../types/api.types'
+import { TrendingUp } from 'lucide-react'
+import { getCedulasSerie } from '../../services/api'
+import type { CedulaSerieItem } from '../../types/api.types'
 
-interface ChartDataPoint {
-  vacuna: string
-  Hombres: number
-  Mujeres: number
+type Agrupacion = 'dia' | 'semana' | 'mes'
+
+const AGRUPACION_LABELS: Record<Agrupacion, string> = {
+  dia:    'Por Día',
+  semana: 'Por Semana',
+  mes:    'Por Mes',
 }
 
-function mergeByVacuna(
-  masculino: VacunacionPorSexoDTO[],
-  femenino: VacunacionPorSexoDTO[],
-): ChartDataPoint[] {
-  const map = new Map<string, ChartDataPoint>()
-
-  for (const item of masculino) {
-    map.set(item.vacuna, { vacuna: item.vacuna, Hombres: item.total_aplicaciones, Mujeres: 0 })
-  }
-  for (const item of femenino) {
-    const existing = map.get(item.vacuna)
-    if (existing) {
-      existing.Mujeres = item.total_aplicaciones
-    } else {
-      map.set(item.vacuna, { vacuna: item.vacuna, Hombres: 0, Mujeres: item.total_aplicaciones })
-    }
-  }
-
-  return Array.from(map.values())
-}
-
-// Abreviar etiquetas largas para el eje X
-function abbreviate(label: string, maxLen = 10): string {
-  return label.length > maxLen ? label.slice(0, maxLen) + '…' : label
+function formatPeriodo(periodo: string): string {
+  // ISO date YYYY-MM-DD or YYYY-MM → format human readable
+  if (!periodo) return periodo
+  const parts = (periodo as string).split('-')
+  if (parts.length === 2) return `${parts[1]}/${parts[0]}`  // MM/YYYY
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}`  // DD/MM
+  return periodo
 }
 
 export function MonthlyTrendChart() {
-  const [data, setData] = useState<ChartDataPoint[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [data,       setData]       = useState<CedulaSerieItem[]>([])
+  const [agrupacion, setAgrupacion] = useState<Agrupacion>('mes')
+  const [isLoading,  setIsLoading]  = useState(true)
+  const [error,      setError]      = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    async function fetchData() {
-      try {
-        const [masc, fem] = await Promise.all([
-          getVacunacionesPorSexo('M'),
-          getVacunacionesPorSexo('F'),
-        ])
-        if (!cancelled) {
-          setData(mergeByVacuna(masc, fem))
-        }
-      } catch {
-        if (!cancelled) setError(true)
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
+  const fetchData = useCallback(async (ag: Agrupacion) => {
+    setIsLoading(true)
+    setError(false)
+    try {
+      const result = await getCedulasSerie(ag)
+      setData(result)
+    } catch {
+      setError(true)
+    } finally {
+      setIsLoading(false)
     }
-    fetchData()
-    return () => { cancelled = true }
   }, [])
+
+  useEffect(() => { fetchData(agrupacion) }, [agrupacion, fetchData])
+
+  const total = data.reduce((s, d) => s + d.total, 0)
 
   return (
     <section
-      aria-label="Histograma de vacunación por sexo"
+      aria-label="Tendencia de registro de cédulas"
       className="bg-white rounded-xl p-5 shadow-sm border border-gray-100"
     >
-      {/* Header */}
-      <div className="mb-5">
-        <h3 className="text-sm font-semibold text-gray-900">Vacunación por Sexo</h3>
-        <p className="text-xs text-gray-500 mt-0.5">Comparativo Hombres vs Mujeres por tipo de vacuna</p>
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#006657]/10 flex items-center justify-center flex-shrink-0">
+            <TrendingUp size={16} className="text-[#006657]" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">Tendencia de Cédulas</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {isLoading ? 'Cargando…' : `${total.toLocaleString('es-MX')} registros en el período`}
+            </p>
+          </div>
+        </div>
+
+        {/* Selector de agrupación */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5 flex-shrink-0">
+          {(Object.keys(AGRUPACION_LABELS) as Agrupacion[]).map((ag) => (
+            <button
+              key={ag}
+              onClick={() => setAgrupacion(ag)}
+              className={[
+                'px-3 py-1 rounded-md text-xs font-medium transition-all duration-200',
+                ag === agrupacion
+                  ? 'bg-white text-[#006657] shadow-sm font-semibold'
+                  : 'text-gray-500 hover:text-gray-700',
+              ].join(' ')}
+            >
+              {AGRUPACION_LABELS[ag]}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Loading skeleton */}
+      {/* ── Skeleton ────────────────────────────────────────────────────── */}
       {isLoading && (
-        <div className="flex items-end gap-2 h-48">
-          {[60, 80, 50, 90, 70, 65].map((pct, i) => (
+        <div className="h-52 flex items-end gap-1.5 px-2">
+          {[40, 65, 45, 80, 55, 90, 70, 85, 60, 75, 50, 95].map((pct, i) => (
             <div
               key={i}
               aria-hidden="true"
-              className="flex-1 rounded-t-md skeleton"
+              className="flex-1 rounded-t-sm skeleton"
               style={{ height: `${pct}%` }}
             />
           ))}
         </div>
       )}
 
-      {/* Error state */}
+      {/* ── Error ───────────────────────────────────────────────────────── */}
       {!isLoading && error && (
-        <div className="h-48 flex items-center justify-center text-xs text-gray-400">
-          No se pudieron cargar los datos de vacunación.
+        <div className="h-52 flex items-center justify-center text-xs text-gray-400">
+          No se pudieron cargar los datos de tendencia.
         </div>
       )}
 
-      {/* Empty state */}
+      {/* ── Empty ───────────────────────────────────────────────────────── */}
       {!isLoading && !error && data.length === 0 && (
-        <div className="h-48 flex items-center justify-center text-xs text-gray-400">
-          Sin registros de vacunación disponibles.
+        <div className="h-52 flex items-center justify-center text-xs text-gray-400">
+          Sin registros en el período seleccionado.
         </div>
       )}
 
-      {/* Chart */}
+      {/* ── Chart ───────────────────────────────────────────────────────── */}
       {!isLoading && !error && data.length > 0 && (
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={data} barCategoryGap="25%" barGap={3}>
+        <ResponsiveContainer width="100%" height={208}>
+          <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="gradCedulas" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%"  stopColor="#006657" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="#006657" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
             <XAxis
-              dataKey="vacuna"
-              tickFormatter={abbreviate}
+              dataKey="periodo"
+              tickFormatter={formatPeriodo}
               tick={{ fontSize: 10, fill: '#6b7280' }}
               axisLine={false}
               tickLine={false}
+              interval="preserveStartEnd"
             />
             <YAxis
               tick={{ fontSize: 10, fill: '#6b7280' }}
@@ -133,17 +149,21 @@ export function MonthlyTrendChart() {
               allowDecimals={false}
             />
             <Tooltip
+              formatter={(val) => [(val as number)?.toLocaleString('es-MX'), 'Cédulas']}
+              labelFormatter={(label) => formatPeriodo(String(label ?? ''))}
               contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
-              cursor={{ fill: '#f9fafb' }}
+              cursor={{ stroke: '#006657', strokeWidth: 1, strokeDasharray: '4 4' }}
             />
-            <Legend
-              wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-              iconType="circle"
-              iconSize={8}
+            <Area
+              type="monotone"
+              dataKey="total"
+              stroke="#006657"
+              strokeWidth={2.5}
+              fill="url(#gradCedulas)"
+              dot={data.length <= 12 ? { r: 3, fill: '#006657', strokeWidth: 0 } : false}
+              activeDot={{ r: 5, fill: '#006657' }}
             />
-            <Bar dataKey="Hombres" fill="#006657" radius={[4, 4, 0, 0]} maxBarSize={28} />
-            <Bar dataKey="Mujeres" fill="#BC955C" radius={[4, 4, 0, 0]} maxBarSize={28} />
-          </BarChart>
+          </AreaChart>
         </ResponsiveContainer>
       )}
     </section>
