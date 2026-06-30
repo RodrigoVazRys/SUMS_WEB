@@ -2,14 +2,15 @@
 // Roles mapeados desde la API: 1=SuperAdmin, 2=Admin, 3=Analista, 4=Entrevistador
 // Solo SuperAdmin (1) y Admin (2) tienen acceso a la web app.
 
-export type UserRole = 'SuperAdmin' | 'Admin' | 'User'
+export type UserRole = 'SuperAdmin' | 'Admin' | 'Analista' | 'User'
 
 /** Mapeo de rol_id de la API a UserRole interno */
 export function mapRolIdToRole(rol_id: number): UserRole {
   switch (rol_id) {
     case 1: return 'SuperAdmin'
     case 2: return 'Admin'
-    default: return 'User' // 3=Analista, 4=Entrevistador → solo app móvil
+    case 3: return 'Analista'
+    default: return 'User' // 4=Entrevistador → solo app móvil
   }
 }
 
