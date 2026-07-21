@@ -11,6 +11,7 @@ import { getUnidadesSalud, createUnidadSalud, updateUnidadSalud, deleteUnidadSal
 import type { UnidadSalud } from '../types/api.types'
 import { Toast } from '../components/molecules/Toast'
 import type { ToastVariant } from '../components/molecules/Toast'
+import { sanitizeCluesInput, sanitizeNombreInput, validateClues, validateNombre } from '../utils/validators'
 
 interface ToastState { message: string; variant: ToastVariant }
 
@@ -74,9 +75,28 @@ export function CentrosSaludPage() {
   // ── Submit crear/editar ────────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    const cluesCheck = validateClues(form.clues)
+    if (!cluesCheck.valid) {
+      showToast(cluesCheck.error ?? 'CLUES inválido.', 'error')
+      return
+    }
+    const nombreCheck = validateNombre(form.nombre)
+    if (!nombreCheck.valid) {
+      showToast(nombreCheck.error ?? 'Nombre del centro inválido.', 'error')
+      return
+    }
+    if (form.distrito.trim()) {
+      const distritoCheck = validateNombre(form.distrito)
+      if (!distritoCheck.valid) {
+        showToast(distritoCheck.error ?? 'Distrito inválido.', 'error')
+        return
+      }
+    }
+
     setIsSaving(true)
     const payload = {
-      clues:          form.clues.trim(),
+      clues:          form.clues.trim().toUpperCase(),
       nombre:         form.nombre.trim(),
       distrito:       form.distrito.trim() || undefined,
       numero_nucleos: form.numero_nucleos ? Number(form.numero_nucleos) : undefined,
@@ -303,10 +323,14 @@ export function CentrosSaludPage() {
                   <input
                     type="text"
                     value={form[key as keyof UnidadForm]}
-                    onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                    onChange={(e) => {
+                      const raw = e.target.value
+                      const sanitized = key === 'clues' ? sanitizeCluesInput(raw) : sanitizeNombreInput(raw)
+                      setForm((f) => ({ ...f, [key]: sanitized }))
+                    }}
                     placeholder={placeholder}
                     required={required}
-                    maxLength={key === 'clues' ? 11 : undefined}
+                    maxLength={key === 'clues' ? 11 : 100}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>

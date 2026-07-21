@@ -1,18 +1,26 @@
 // ─── Molecule: DemoCredentials ────────────────────────────────────────────────
 // Panel de ayuda en la vista Login que muestra credenciales de demo.
 // Solo visible en entorno de desarrollo (VITE_DEMO_MODE=true).
-
-const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true'
+//
+// Capa adicional de seguridad: además de la env var, se exige que el build
+// sea de desarrollo (import.meta.env.DEV). Vite reemplaza `import.meta.env.DEV`
+// por una constante literal en tiempo de build, así que en un build de
+// producción este panel queda eliminado del bundle sin importar el valor
+// (incluso mal configurado) de VITE_DEMO_MODE.
+const IS_DEMO = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
 
 interface Credential {
-  email: string
+  username: string
   password: string
   role: string
 }
 
+// Formato consistente con el whitelist alfanumérico (+ guion bajo) del login
+// real (ver USUARIO_REGEX en utils/validators.ts) — no son direcciones de
+// correo, son nombres de usuario institucionales.
 const CREDENTIALS: Credential[] = [
-  { email: 'superadmin@sums.gob.mx', password: 'admin123', role: 'SuperAdmin' },
-  { email: 'admin@sums.gob.mx',      password: 'admin123', role: 'Admin'      },
+  { username: 'superadmin_demo', password: 'admin123', role: 'SuperAdmin' },
+  { username: 'admin_demo',      password: 'admin123', role: 'Admin'      },
 ]
 
 export function DemoCredentials() {
@@ -25,11 +33,11 @@ export function DemoCredentials() {
       </p>
       <div className="space-y-1.5">
         {CREDENTIALS.map((c) => (
-          <div key={c.email} className="text-[11px] text-gray-600 font-mono flex items-center gap-2">
+          <div key={c.username} className="text-[11px] text-gray-600 font-mono flex items-center gap-2">
             <span className="text-[10px] bg-primary/10 text-primary font-sans font-semibold px-1.5 py-0.5 rounded">
               {c.role}
             </span>
-            <span>{c.email} / {c.password}</span>
+            <span>{c.username} / {c.password}</span>
           </div>
         ))}
       </div>

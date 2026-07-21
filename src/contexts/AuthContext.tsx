@@ -6,12 +6,18 @@
 //   rol_id 3/4 (User)     → DENEGADO en web, solo app móvil
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import type { AuthContextType, AuthUser, LoginResult } from '../types/auth.types'
+import type { AuthContextType, AuthUser, LoginResult, UserRole } from '../types/auth.types'
 import { mapRolIdToRole } from '../types/auth.types'
 import { loginApi, TOKEN_KEY, AUTH_USER_KEY } from '../services/api'
+import { parseStoredSession } from '../utils/validators'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const SESSION_TIMEOUT = Number(import.meta.env.VITE_SESSION_TIMEOUT ?? 28800) * 1000
+
+// Roles 3/4 (Analista/Entrevistador) → DENEGADO en web, solo app móvil.
+// mapRolIdToRole mapea rol_id 3 → 'Analista' y rol_id 4 (default) → 'User',
+// por lo que ambos deben quedar bloqueados aquí (antes solo se bloqueaba 'User').
+const WEB_DENIED_ROLES: UserRole[] = ['User', 'Analista']
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -27,8 +33,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const stored = localStorage.getItem(AUTH_USER_KEY)
       const token  = localStorage.getItem(TOKEN_KEY)
       if (stored && token) {
-        const parsed = JSON.parse(stored) as { user: AuthUser; expiresAt: number }
-        if (parsed.expiresAt > Date.now()) {
+        // Validación de esquema en runtime: localStorage puede haber sido
+        // manipulado o corresponder a una versión anterior del esquema.
+        const parsed = parseStoredSession(stored)
+        if (parsed && parsed.expiresAt > Date.now()) {
           setUser(parsed.user)
         } else {
           // Token expirado: limpiar sesión
@@ -54,10 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const role = mapRolIdToRole(apiUser.rol_id)
 
       // RBAC: Roles 3/4 (Analista/Entrevistador) → DENEGADO en web
-      if (role === 'User') {
+      if (WEB_DENIED_ROLES.includes(role)) {
         return {
           success: false,
-          deniedRole: 'User',
+          deniedRole: role,
           error: 'Acceso denegado: Su rol solo permite acceso mediante la aplicación móvil',
         }
       }
