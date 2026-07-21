@@ -10,6 +10,7 @@ import { getUsers, registerUser, updateUserRole } from '../services/api'
 import type { Usuario } from '../types/api.types'
 import { Toast } from '../components/molecules/Toast'
 import type { ToastVariant } from '../components/molecules/Toast'
+import { sanitizeUsuarioInput, validateUsuarioInstitucional, validateContrasena, CONTRASENA_MAX_LENGTH } from '../utils/validators'
 
 // ─── Mapeo de rol ─────────────────────────────────────────────────────────────
 const ROL_LABELS: Record<number, { label: string; color: string }> = {
@@ -61,11 +62,23 @@ export function GestionUsuariosPage() {
   // ── Registrar nuevo usuario ────────────────────────────────────────────────
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
-    if (!regForm.nombre_usuario.trim() || !regForm.contrasena.trim()) return
+
+    const usuarioCheck = validateUsuarioInstitucional(regForm.nombre_usuario)
+    if (!usuarioCheck.valid) {
+      showToast(usuarioCheck.error ?? 'Nombre de usuario inválido.', 'error')
+      return
+    }
+    const contrasenaCheck = validateContrasena(regForm.contrasena)
+    if (!contrasenaCheck.valid) {
+      showToast(contrasenaCheck.error ?? 'Contraseña inválida.', 'error')
+      return
+    }
+
+    const payload = { ...regForm, nombre_usuario: regForm.nombre_usuario.trim() }
     setIsSaving(true)
     try {
-      await registerUser(regForm)
-      showToast(`Usuario "${regForm.nombre_usuario}" registrado exitosamente.`)
+      await registerUser(payload)
+      showToast(`Usuario "${payload.nombre_usuario}" registrado exitosamente.`)
       setShowRegModal(false)
       setRegForm({ nombre_usuario: '', contrasena: '', rol_id: 2 })
       fetchUsers()
@@ -290,9 +303,10 @@ export function GestionUsuariosPage() {
                 <input
                   type="text"
                   value={regForm.nombre_usuario}
-                  onChange={(e) => setRegForm((f) => ({ ...f, nombre_usuario: e.target.value }))}
+                  onChange={(e) => setRegForm((f) => ({ ...f, nombre_usuario: sanitizeUsuarioInput(e.target.value) }))}
                   placeholder="usuario_institucional"
                   required
+                  maxLength={50}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
               </div>
@@ -306,8 +320,11 @@ export function GestionUsuariosPage() {
                   onChange={(e) => setRegForm((f) => ({ ...f, contrasena: e.target.value }))}
                   placeholder="••••••••"
                   required
+                  minLength={8}
+                  maxLength={CONTRASENA_MAX_LENGTH}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
+                <p className="text-[11px] text-gray-400">Mínimo 8 caracteres, con mayúscula, minúscula y número.</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block">

@@ -4,7 +4,7 @@
 // Sin estado de procesamiento — lo maneja la página padre.
 
 import { useRef, useState, useCallback } from 'react'
-import { Upload, FileText } from 'lucide-react'
+import { Upload, FileText, AlertCircle } from 'lucide-react'
 import { Button } from '../atoms/Button'
 
 export interface DropzoneProps {
@@ -12,12 +12,37 @@ export interface DropzoneProps {
   accept?: string
 }
 
+// ─── Validación de archivo ────────────────────────────────────────────────────
+// Remediación de seguridad: antes de invocar onFileLoaded se valida tamaño y
+// tipo MIME real del archivo (no solo la extensión), para evitar que se
+// acepten archivos arbitrarios (potencialmente maliciosos) hacia el flujo de
+// OCR / subida.
+const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024 // 20 MB
+const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
+
+function validateFile(file: File): string | null {
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return 'El archivo excede el tamaño máximo permitido de 20 MB.'
+  }
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    return 'Tipo de archivo no permitido. Solo se aceptan PDF, JPG o PNG.'
+  }
+  return null
+}
+
 export function Dropzone({ onFileLoaded, accept = '.pdf,image/*' }: DropzoneProps) {
   const [isDragOver, setIsDragOver] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const processFile = useCallback(
     (file: File) => {
+      const validationError = validateFile(file)
+      if (validationError) {
+        setError(validationError)
+        return
+      }
+      setError(null)
       onFileLoaded(file)
     },
     [onFileLoaded],
@@ -33,6 +58,8 @@ export function Dropzone({ onFileLoaded, accept = '.pdf,image/*' }: DropzoneProp
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (file) processFile(file)
+    // Permite volver a seleccionar el mismo archivo tras un error.
+    e.target.value = ''
   }
 
   return (
@@ -98,6 +125,17 @@ export function Dropzone({ onFileLoaded, accept = '.pdf,image/*' }: DropzoneProp
       >
         Seleccionar Archivo
       </Button>
+
+      {/* Error de validación de archivo */}
+      {error && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-left w-full"
+        >
+          <AlertCircle size={14} className="text-red-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+          <p className="text-xs text-red-700 leading-snug">{error}</p>
+        </div>
+      )}
     </div>
   )
 }

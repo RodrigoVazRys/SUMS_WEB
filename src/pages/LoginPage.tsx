@@ -7,12 +7,15 @@ import { LoginHeroPanel } from '../components/organisms/LoginHeroPanel'
 import { LoginForm } from '../components/organisms/LoginForm'
 import { Spinner } from '../components/atoms/Spinner'
 import type { LoginFormSubmitPayload } from '../components/organisms/LoginForm'
+import { parseLocationFromState } from '../utils/validators'
 
 export function LoginPage() {
   const { login, isAuthenticated, isLoading } = useAuth()
   const navigate  = useNavigate()
   const location  = useLocation()
-  const from      = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/dashboard'
+  // Validación de esquema en runtime: location.state proviene de react-router
+  // y no debe darse por válido sin comprobar su forma antes de usarlo.
+  const from      = parseLocationFromState(location.state).from?.pathname ?? '/dashboard'
 
   // Si ya está autenticado, redirige a la ruta destino
   if (!isLoading && isAuthenticated) {

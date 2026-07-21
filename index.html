@@ -6,6 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Sistema Unidad Médica Suchiapa - Plataforma administrativa integral del IMSS Bienestar para el control de expedientes, captura de cédulas y gestión hospitalaria." />
     <meta name="theme-color" content="#006657" />
+    <!--
+      Content-Security-Policy (remediación de seguridad).
+      connect-src incluye los endpoints configurados en .env.example para
+      desarrollo (API, OCR, almacenamiento). En despliegues reales, actualizar
+      esta lista para que coincida con las URLs de VITE_API_BASE_URL,
+      VITE_OCR_API_URL y VITE_STORAGE_URL configuradas en el entorno de
+      producción real (pendiente manual: no se pueden inyectar variables de
+      entorno en una meta tag estática de index.html sin un paso de build
+      adicional que las sustituya).
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://localhost:3000 http://localhost:8000 http://localhost:9000; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    />
     <!-- Noto Sans - Tipografía Oficial IMSS Bienestar -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

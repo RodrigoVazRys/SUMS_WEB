@@ -6,7 +6,7 @@
 //   - Callbacks onSuccess / onError para que la página muestre toasts
 
 import { useState, useEffect } from 'react'
-import { Save, Loader2 } from 'lucide-react'
+import { Save, Loader2, AlertTriangle } from 'lucide-react'
 import { OcrFormField } from '../molecules/OcrFormField'
 import { Select } from '../atoms/Select'
 import { Button } from '../atoms/Button'
@@ -15,6 +15,23 @@ import type { OcrConfidence } from '../molecules/OcrFormField'
 import { getCatalogo, postCedula } from '../../services/api'
 import type { CatalogoItem } from '../../types/api.types'
 import { useAuth } from '../../contexts/AuthContext'
+import { sanitizeNombreInput, validateNombre } from '../../utils/validators'
+
+// ─── Catálogo cerrado de mensajes de error ────────────────────────────────────
+// En vez de reenviar axiosError.response.data.error crudo al usuario (puede
+// filtrar detalles internos del backend/DB), se mapea por código de estado
+// HTTP a un mensaje amigable predefinido.
+function mapCedulaErrorToFriendlyMessage(err: unknown): string {
+  const axiosError = err as { response?: { status?: number } }
+  const status = axiosError.response?.status
+
+  if (status === 400) return 'Los datos enviados no son válidos. Revise los campos e intente nuevamente.'
+  if (status === 401) return 'Su sesión ha expirado. Vuelva a iniciar sesión.'
+  if (status === 403) return 'No tiene permisos para guardar esta cédula.'
+  if (status === 409) return 'Ya existe un registro con estos datos.'
+  if (status !== undefined && status >= 500) return 'Error del servidor. Intente nuevamente más tarde.'
+  return 'Error al guardar la cédula. Intente nuevamente.'
+}
 
 // ─── OCR initial values (simulated extraction) ────────────────────────────────
 const INITIAL_VALUES = {
@@ -54,6 +71,13 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
 
   // ── Save state ─────────────────────────────────────────────────────────────
   const [isSaving, setIsSaving] = useState(false)
+
+  // ── Núcleo familiar ────────────────────────────────────────────────────────
+  // Todavía no existe una pantalla real de selección de núcleo familiar en la
+  // app. En vez de enviar un placeholder (nucleo_familiar_id: 1) en silencio,
+  // se bloquea el guardado hasta que exista un id real en el contexto/estado
+  // de la aplicación.
+  const nucleoFamiliarId: number | null = null
 
   // ── Load catálogos on mount ─────────────────────────────────────────────────
   useEffect(() => {
@@ -96,22 +120,51 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
   // ── Submit: POST /cedulas ─────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Defensa en profundidad: además de deshabilitar el botón de guardado,
+    // se bloquea el envío aquí si no hay un núcleo familiar real seleccionado.
+    if (nucleoFamiliarId === null) {
+      onError('No se puede guardar: no hay un núcleo familiar seleccionado. Esta funcionalidad requiere implementar la pantalla de selección de núcleo familiar.')
+      return
+    }
+
+    // .trim() consistente en nombres/apellidos antes de validar y enviar
+    const nombresTrim         = nombres.trim()
+    const apellidoPaternoTrim = apellidoPaterno.trim()
+    const apellidoMaternoTrim = apellidoMaterno.trim()
+
+    const nombresCheck = validateNombre(nombresTrim)
+    if (!nombresCheck.valid) {
+      onError(nombresCheck.error ?? 'El campo Nombre(s) es inválido.')
+      return
+    }
+    const paternoCheck = validateNombre(apellidoPaternoTrim)
+    if (!paternoCheck.valid) {
+      onError(paternoCheck.error ?? 'El campo Apellido Paterno es inválido.')
+      return
+    }
+    if (apellidoMaternoTrim) {
+      const maternoCheck = validateNombre(apellidoMaternoTrim)
+      if (!maternoCheck.valid) {
+        onError(maternoCheck.error ?? 'El campo Apellido Materno es inválido.')
+        return
+      }
+    }
+
     setIsSaving(true)
 
     try {
       await postCedula({
         unidad_salud_id:     user?.unidad_salud_id ?? 1,
         entrevistador_id:    user?.id ?? 1,
-        nucleo_familiar_id:  1, // Placeholder — en producción viene de selección anterior
+        nucleo_familiar_id:  nucleoFamiliarId,
         fecha_registro:      new Date().toISOString().split('T')[0],
         estado:              'sincronizada',
-        observaciones:       `Nombres: ${nombres} ${apellidoPaterno} ${apellidoMaterno}. Mat.Techo ID: ${materialTechoId}. Serv.Agua ID: ${servicioAguaId}`,
+        observaciones:       `Nombres: ${nombresTrim} ${apellidoPaternoTrim} ${apellidoMaternoTrim}. Mat.Techo ID: ${materialTechoId}. Serv.Agua ID: ${servicioAguaId}`,
       })
       onSuccess()
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { error?: string }; status?: number } }
-      const msg = axiosError.response?.data?.error ?? 'Error al guardar la cédula. Intente nuevamente.'
-      onError(msg)
+      onError(mapCedulaErrorToFriendlyMessage(err))
     } finally {
       setIsSaving(false)
     }
@@ -144,7 +197,8 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
             label="Nombre(s)"
             htmlFor="ocr-nombres"
             value={nombres}
-            onChange={(e) => setNombres(e.target.value)}
+            onChange={(e) => setNombres(sanitizeNombreInput(e.target.value))}
+            maxLength={100}
             placeholder="Nombre(s)"
           />
 
@@ -152,7 +206,8 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
             label="Apellido Paterno"
             htmlFor="ocr-apellido-paterno"
             value={apellidoPaterno}
-            onChange={(e) => setApellidoPaterno(e.target.value)}
+            onChange={(e) => setApellidoPaterno(sanitizeNombreInput(e.target.value))}
+            maxLength={100}
             confidence={apellidoConfianza}
             suggestion={SUGGESTION_APELLIDO}
             onAcceptSuggestion={handleAcceptSuggestion}
@@ -163,7 +218,8 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
             label="Apellido Materno"
             htmlFor="ocr-apellido-materno"
             value={apellidoMaterno}
-            onChange={(e) => setApellidoMaterno(e.target.value)}
+            onChange={(e) => setApellidoMaterno(sanitizeNombreInput(e.target.value))}
+            maxLength={100}
             placeholder="Apellido Materno"
           />
         </fieldset>
@@ -212,6 +268,17 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
         </fieldset>
       </div>
 
+      {/* Aviso: sin núcleo familiar real seleccionado — guardado bloqueado */}
+      {nucleoFamiliarId === null && (
+        <div className="mx-5 mb-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 flex-shrink-0">
+          <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-amber-600" aria-hidden="true" />
+          <p className="text-xs text-amber-700 leading-snug">
+            No hay un núcleo familiar seleccionado. Esta cédula no puede guardarse hasta que exista una pantalla real
+            de selección de núcleo familiar.
+          </p>
+        </div>
+      )}
+
       {/* Footer actions */}
       <div className="px-4 py-3.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-3 flex-shrink-0">
         <Button variant="secondary" type="button" onClick={onCancel} disabled={isSaving}>
@@ -221,7 +288,7 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
           id="ocr-save-btn"
           variant="primary"
           type="submit"
-          disabled={isSaving || loadingCatalogos}
+          disabled={isSaving || loadingCatalogos || nucleoFamiliarId === null}
           leftIcon={isSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
         >
           {isSaving ? 'Guardando...' : 'Validar y Guardar Cédula'}

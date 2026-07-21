@@ -8,6 +8,7 @@ import { Eye, EyeOff, ArrowRight, AlertCircle, User, Lock, ShieldX } from 'lucid
 import { Button } from '../atoms/Button'
 import { Logo } from '../atoms/Logo'
 import { FormField } from '../molecules/FormField'
+import { sanitizeUsuarioInput, CONTRASENA_MAX_LENGTH } from '../../utils/validators'
 
 export interface LoginFormSubmitPayload {
   email: string      // mantenido por compatibilidad con LoginPage — mapea a nombre_usuario
@@ -97,7 +98,8 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           autoComplete="username"
           placeholder="usuario_institucional"
           value={username}
-          onChange={(e) => { setUsername(e.target.value); clearError() }}
+          onChange={(e) => { setUsername(sanitizeUsuarioInput(e.target.value)); clearError() }}
+          maxLength={50}
           leftAddon={<User size={15} />}
           disabled={isLoading}
         />
@@ -110,6 +112,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           placeholder="••••••••"
           value={password}
           onChange={(e) => { setPassword(e.target.value); clearError() }}
+          maxLength={CONTRASENA_MAX_LENGTH}
           leftAddon={<Lock size={15} />}
           rightAddon={
             <button
