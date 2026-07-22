@@ -5,7 +5,7 @@
 //   - Borde naranja (baja confianza) que se limpia al corregir
 //   - Callbacks onSuccess / onError para que la página muestre toasts
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Save, Loader2, AlertTriangle } from 'lucide-react'
 import { OcrFormField } from '../molecules/OcrFormField'
 import { Select } from '../atoms/Select'
@@ -44,6 +44,18 @@ const INITIAL_VALUES = {
 
 const SUGGESTION_APELLIDO = 'Pérez'
 
+// ─── Categorías de observaciones de la visita ─────────────────────────────────
+// Lista fija de 6 categorías compartida en todo el sistema. Cada chip inserta
+// la "frase base" correspondiente en el textarea de observaciones.
+const CATEGORIAS_OBSERVACION = [
+  { key: 'seguimiento', label: 'Seguimiento', frase: 'Se requiere visita de seguimiento la próxima semana.' },
+  { key: 'enfermedad_rara', label: 'Enfermedad rara', frase: 'Se observó un padecimiento inusual que requiere valoración médica.' },
+  { key: 'embarazo', label: 'Embarazo', frase: 'Hay una integrante embarazada, dar seguimiento prenatal.' },
+  { key: 'vacunas_pendientes', label: 'Vacunas pendientes', frase: 'Faltan dosis de vacunación, llevar cartilla la próxima visita.' },
+  { key: 'vivienda_mal_estado', label: 'Vivienda en mal estado', frase: 'Vivienda con materiales precarios, requiere atención.' },
+  { key: 'mascota_sin_vacunar', label: 'Mascota sin vacunar', frase: 'Hay mascotas sin vacunación al corriente en el hogar.' },
+] as const
+
 function catalogoToOptions(items: CatalogoItem[]): SelectOption[] {
   return items.map((item) => ({ value: String(item.id), label: item.nombre }))
 }
@@ -63,6 +75,8 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
   const [apellidoMaterno, setApellidoMaterno] = useState(INITIAL_VALUES.apellidoMaterno)
   const [materialTechoId, setMaterialTechoId] = useState('')
   const [servicioAguaId,  setServicioAguaId]  = useState('')
+  const [observaciones,   setObservaciones]   = useState('')
+  const observacionesRef = useRef<HTMLTextAreaElement>(null)
 
   // ── Catálogos state ────────────────────────────────────────────────────────
   const [techoOptions, setTechoOptions] = useState<SelectOption[]>([])
@@ -117,6 +131,20 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
     setApellidoPaterno(SUGGESTION_APELLIDO)
   }
 
+  // ── Observaciones: insertar frase predefinida desde un chip ───────────────
+  function insertarFrase(frase: string) {
+    setObservaciones((prev) => (prev.trim() === '' ? frase : `${prev} ${frase}`))
+    // Mover el foco al textarea y el cursor al final, sin sobreingeniería.
+    requestAnimationFrame(() => {
+      const el = observacionesRef.current
+      if (el) {
+        el.focus()
+        const end = el.value.length
+        el.setSelectionRange(end, end)
+      }
+    })
+  }
+
   // ── Submit: POST /cedulas ─────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -151,6 +179,11 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
       }
     }
 
+    if (observaciones.trim().length < 15) {
+      onError('Las observaciones de la visita son obligatorias y deben describir algo específico (mínimo 15 caracteres).')
+      return
+    }
+
     setIsSaving(true)
 
     try {
@@ -160,7 +193,7 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
         nucleo_familiar_id:  nucleoFamiliarId,
         fecha_registro:      new Date().toISOString().split('T')[0],
         estado:              'sincronizada',
-        observaciones:       `Nombres: ${nombresTrim} ${apellidoPaternoTrim} ${apellidoMaternoTrim}. Mat.Techo ID: ${materialTechoId}. Serv.Agua ID: ${servicioAguaId}`,
+        observaciones:       observaciones.trim(),
       })
       onSuccess()
     } catch (err: unknown) {
@@ -264,6 +297,46 @@ export function OcrValidationForm({ onSuccess, onError, onCancel }: OcrValidatio
                 />
               )}
             </div>
+          </div>
+        </fieldset>
+
+        {/* ── Observaciones de la Visita ────────────────────── */}
+        <fieldset className="space-y-2">
+          <legend className="text-[10px] font-bold text-primary uppercase tracking-widest mb-3 block">
+            Observaciones de la Visita
+          </legend>
+
+          <div className="flex flex-wrap gap-1.5">
+            {CATEGORIAS_OBSERVACION.map((cat) => (
+              <button
+                key={cat.key}
+                type="button"
+                onClick={() => insertarFrase(cat.frase)}
+                className="text-[11px] px-2.5 py-1 rounded-full border border-gray-300 text-gray-600 hover:bg-primary/10 hover:border-primary hover:text-primary transition-colors"
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            ref={observacionesRef}
+            id="ocr-observaciones"
+            value={observaciones}
+            onChange={(e) => setObservaciones(e.target.value)}
+            rows={4}
+            maxLength={300}
+            placeholder="Describe hallazgos concretos de la visita: salud, vivienda, seguimiento necesario..."
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-gray-400">{observaciones.length}/300</span>
+            {observaciones.trim().length < 15 && (
+              <span className="text-[11px] text-amber-600">
+                Describe algo específico, mínimo 15 caracteres.
+              </span>
+            )}
           </div>
         </fieldset>
       </div>

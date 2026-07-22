@@ -3,6 +3,7 @@
 // Rutas SuperAdmin: /gestion-usuarios, /centros-salud
 // Rutas Admin+SuperAdmin: /dashboard, /captura-ocr
 // Rutas Estadísticas (Admin+SuperAdmin): /estadisticas/operacion|demografia|salud|vivienda
+// Rutas Minería (Admin+SuperAdmin): /mineria/riesgo, /mineria/busqueda
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
@@ -17,6 +18,8 @@ import { EstadisticasOperacionPage } from './pages/EstadisticasOperacionPage'
 import { EstadisticasDemografiaPage } from './pages/EstadisticasDemografiaPage'
 import { EstadisticasSaludPage } from './pages/EstadisticasSaludPage'
 import { EstadisticasViviendaPage } from './pages/EstadisticasViviendaPage'
+import { RiesgoPage } from './pages/RiesgoPage'
+import { BusquedaPage } from './pages/BusquedaPage'
 
 export default function App() {
   return (
@@ -37,6 +40,10 @@ export default function App() {
               <Route path="/estadisticas/demografia" element={<EstadisticasDemografiaPage />} />
               <Route path="/estadisticas/salud"      element={<EstadisticasSaludPage />}      />
               <Route path="/estadisticas/vivienda"   element={<EstadisticasViviendaPage />}   />
+
+              {/* ── Módulos de Minería (subcomponentes B/C) ─── */}
+              <Route path="/mineria/riesgo"    element={<RiesgoPage />}    />
+              <Route path="/mineria/busqueda"  element={<BusquedaPage />}  />
 
               {/* ── SuperAdmin only ──────────────────────── */}
               <Route element={<ProtectedRoute allowedRoles={['SuperAdmin']} />}>
