@@ -14,11 +14,13 @@ import type {
   VisitaPrioritaria,
   RiesgoMetricas,
   ResumenZona,
+  DistribucionRiesgo,
   CatalogosRiesgo,
   RespuestaBusqueda,
   BuscarMetricas,
   MotorBusqueda,
   RespuestaBusquedaEstructurada,
+  RespuestaOcrCedula,
 } from '../types/mineria.types'
 
 // ─── Axios instance ───────────────────────────────────────────────────────────
@@ -41,6 +43,23 @@ mineriaApi.interceptors.request.use((config) => {
 /** GET /catalogos — valores disponibles para poblar los <select> del formulario de riesgo. */
 export async function getCatalogosRiesgo(): Promise<CatalogosRiesgo> {
   const { data } = await mineriaApi.get<CatalogosRiesgo>('/catalogos')
+  return data
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ─── Subcomponente A — OCR ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** POST /ocr/procesar-cedula — sube el PDF escaneado de una cédula y extrae sus
+ * campos (checkboxes + texto manuscrito). El interceptor de la instancia fija
+ * Content-Type: application/json por defecto; aquí se sobreescribe para que
+ * axios arme el boundary de multipart/form-data correcto. */
+export async function procesarCedulaOcr(archivo: File): Promise<RespuestaOcrCedula> {
+  const formData = new FormData()
+  formData.append('archivo', archivo)
+  const { data } = await mineriaApi.post<RespuestaOcrCedula>('/ocr/procesar-cedula', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
   return data
 }
 
@@ -70,6 +89,13 @@ export async function getRiesgoMetricas(): Promise<RiesgoMetricas> {
  * de mayor a menor concentración de riesgo. */
 export async function getRiesgoPorZona(): Promise<ResumenZona[]> {
   const { data } = await mineriaApi.get<ResumenZona[]>('/riesgo/zonas')
+  return data
+}
+
+/** GET /riesgo/distribucion — conteo BAJO/MEDIO/ALTO sobre toda la población
+ * (a diferencia de /riesgo/lista, que solo trae las familias ALTO). */
+export async function getRiesgoDistribucion(): Promise<DistribucionRiesgo> {
+  const { data } = await mineriaApi.get<DistribucionRiesgo>('/riesgo/distribucion')
   return data
 }
 

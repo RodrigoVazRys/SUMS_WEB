@@ -111,6 +111,16 @@ export interface ResumenZona {
   nivel_alerta_zona: NivelAlertaZona
 }
 
+/**
+ * Respuesta de GET /riesgo/distribucion — conteo de riesgo (BAJO/MEDIO/ALTO)
+ * sobre TODA la población, a diferencia de `/riesgo/lista` (solo las ALTO).
+ */
+export interface DistribucionRiesgo {
+  n_total: number
+  distribucion: Record<NivelRiesgo, number>
+  n_alto: number
+}
+
 /** Respuesta de GET /catalogos — poblar los <select> del formulario de riesgo. */
 export interface CatalogosRiesgo {
   materiales_techo: string[]
@@ -118,6 +128,36 @@ export interface CatalogosRiesgo {
   materiales_piso: string[]
   manejo_excretas: string[]
   [key: string]: string[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ─── Subcomponente A — OCR ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Ver: sums-data-mining/integracion/api_mineria.py (POST /ocr/procesar-cedula) y
+// subcomponente_A_OCR/config/field_map_sums.json (IDs de campo, ej.
+// "familia.nombre_informante", "vivienda.material_techo.concreto").
+
+export type TipoCampoOcr = 'checkbox' | 'text' | 'number' | 'catalog'
+
+export interface CampoOcr {
+  type: TipoCampoOcr
+  value: string | number | boolean | null
+  confidence: number
+  needs_review: boolean
+  roi?: string
+}
+
+/** Respuesta de POST /ocr/procesar-cedula. `campos` está indexado por el ID de
+ * campo del field_map (ej. "familia.nombre_informante"). */
+export interface RespuestaOcrCedula {
+  doc_id: string
+  archivo_original: string
+  n_paginas: number
+  campos: Record<string, CampoOcr>
+  resumen: {
+    total_campos: number
+    necesitan_revision: number
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

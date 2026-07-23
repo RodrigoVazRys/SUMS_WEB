@@ -6,13 +6,14 @@
 
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { ShieldAlert, Loader2, ListOrdered, RefreshCw, AlertCircle, HeartPulse, MapPinned } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { ShieldAlert, Loader2, ListOrdered, RefreshCw, AlertCircle, HeartPulse, MapPinned, Users } from 'lucide-react'
 import { Select } from '../components/atoms/Select'
 import { Button } from '../components/atoms/Button'
 import { Toast } from '../components/molecules/Toast'
 import type { ToastVariant } from '../components/molecules/Toast'
 import type { SelectOption } from '../components/atoms/Select'
-import { predecirRiesgo, getListaVisitas, getCatalogosRiesgo, getRiesgoPorZona } from '../services/mineriaApi'
+import { predecirRiesgo, getListaVisitas, getCatalogosRiesgo, getRiesgoPorZona, getRiesgoDistribucion } from '../services/mineriaApi'
 import type {
   FamiliaFeatures,
   CocinaUbicacion,
@@ -20,6 +21,7 @@ import type {
   VisitaPrioritaria,
   NivelRiesgo,
   ResumenZona,
+  DistribucionRiesgo,
 } from '../types/mineria.types'
 
 interface ToastState {
@@ -192,6 +194,11 @@ export function RiesgoPage() {
   const [loadingZonas, setLoadingZonas] = useState(true)
   const [errorZonas,   setErrorZonas]   = useState(false)
 
+  // ── Distribución poblacional de riesgo (BAJO/MEDIO/ALTO) ──────────────────
+  const [distribucion,        setDistribucion]        = useState<DistribucionRiesgo | null>(null)
+  const [loadingDistribucion, setLoadingDistribucion]  = useState(true)
+  const [errorDistribucion,   setErrorDistribucion]    = useState(false)
+
   // ── Toast ────────────────────────────────────────────────────────────────────
   const [toast, setToast] = useState<ToastState | null>(null)
 
@@ -282,6 +289,29 @@ export function RiesgoPage() {
     return () => { cancelled = true }
   }, [])
 
+  // ── Load distribución poblacional de riesgo ───────────────────────────────
+  useEffect(() => {
+    let cancelled = false
+    async function fetchDistribucion() {
+      setLoadingDistribucion(true)
+      setErrorDistribucion(false)
+      try {
+        const data = await getRiesgoDistribucion()
+        if (!cancelled) setDistribucion(data)
+      } catch {
+        if (!cancelled) {
+          notify('No se pudo cargar la distribución de riesgo poblacional.', 'error')
+          setDistribucion(null)
+          setErrorDistribucion(true)
+        }
+      } finally {
+        if (!cancelled) setLoadingDistribucion(false)
+      }
+    }
+    fetchDistribucion()
+    return () => { cancelled = true }
+  }, [])
+
   async function handleRefreshVisitas() {
     setLoadingVisitas(true)
     try {
@@ -349,6 +379,83 @@ export function RiesgoPage() {
           Estime el nivel de riesgo de una familia y consulte la lista priorizada de visitas domiciliarias.
         </p>
       </div>
+
+      {/* ── Distribución Poblacional de Riesgo ───────────────────────────────── */}
+      <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#006657]/10 flex items-center justify-center flex-shrink-0">
+              <Users size={16} className="text-[#006657]" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-900">Distribución de Riesgo Poblacional</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Conteo de familias por nivel de riesgo, sobre toda la población evaluada.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5">
+          {loadingDistribucion ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => <div key={i} className="skeleton h-9 rounded-lg" />)}
+            </div>
+          ) : errorDistribucion || !distribucion ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-xs text-gray-400">
+              <AlertCircle size={14} /><span>No se pudo cargar la distribución de riesgo.</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+              {/* Tarjetas de conteo */}
+              <div className="grid grid-cols-3 gap-3">
+                {(['BAJO', 'MEDIO', 'ALTO'] as NivelRiesgo[]).map((nivel) => {
+                  const count = distribucion.distribucion[nivel] ?? 0
+                  const pct = distribucion.n_total > 0 ? Math.round((count / distribucion.n_total) * 100) : 0
+                  return (
+                    <div key={nivel} className={`rounded-xl border p-3 text-center ${NIVEL_RIESGO_CONFIG[nivel]?.ring ?? 'border-gray-200'}`}>
+                      <p className="text-2xl font-bold" style={{ color: NIVEL_RIESGO_CONFIG[nivel]?.bar ?? '#6b7280' }}>
+                        {count.toLocaleString('es-MX')}
+                      </p>
+                      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mt-0.5">{nivel}</p>
+                      <p className="text-[10px] text-gray-400">{pct}%</p>
+                    </div>
+                  )
+                })}
+                <div className="col-span-3 text-center pt-1">
+                  <p className="text-[11px] text-gray-500">
+                    <span className="font-semibold text-gray-700">{distribucion.n_total.toLocaleString('es-MX')}</span> familias evaluadas en total
+                  </p>
+                </div>
+              </div>
+
+              {/* Gráfica de barras */}
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart
+                  data={(['BAJO', 'MEDIO', 'ALTO'] as NivelRiesgo[]).map((nivel) => ({
+                    nivel,
+                    total: distribucion.distribucion[nivel] ?? 0,
+                  }))}
+                  layout="vertical"
+                  barCategoryGap="25%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <YAxis type="category" dataKey="nivel" width={50} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
+                    cursor={{ fill: '#f9fafb' }}
+                    formatter={(value) => [(value as number).toLocaleString('es-MX'), 'Familias']}
+                  />
+                  <Bar dataKey="total" radius={[0, 4, 4, 0]} maxBarSize={26}>
+                    {(['BAJO', 'MEDIO', 'ALTO'] as NivelRiesgo[]).map((nivel) => (
+                      <Cell key={nivel} fill={NIVEL_RIESGO_CONFIG[nivel]?.bar ?? '#6b7280'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         {/* ── Formulario ───────────────────────────────────────────────────── */}
