@@ -4,38 +4,60 @@
 // Paso 2 → DocumentViewer + OcrValidationForm (POST /cedulas)
 
 import { useState, useCallback } from 'react'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import { Dropzone } from '../components/organisms/Dropzone'
 import { DocumentViewer } from '../components/organisms/DocumentViewer'
 import { OcrValidationForm } from '../components/organisms/OcrValidationForm'
 import { FileInfoBar } from '../components/molecules/FileInfoBar'
 import { Toast } from '../components/molecules/Toast'
 import type { ToastVariant } from '../components/molecules/Toast'
+import { procesarCedulaOcr } from '../services/mineriaApi'
+import type { RespuestaOcrCedula } from '../types/mineria.types'
 
-type OcrStep = 'dropzone' | 'validation'
+type OcrStep = 'dropzone' | 'processing' | 'validation'
 
 interface ToastState {
   message: string
   variant: ToastVariant
 }
 
-export function CapturaOcrPage() {
-  const [step,     setStep]     = useState<OcrStep>('dropzone')
-  const [fileName, setFileName] = useState<string | null>(null)
-  const [toast,    setToast]    = useState<ToastState | null>(null)
-  // Llave para forzar reset completo de OcrValidationForm
-  const [formKey,  setFormKey]  = useState(0)
+function mapOcrErrorToFriendlyMessage(err: unknown): string {
+  const axiosErr = err as { response?: { status?: number; data?: { detail?: string } } }
+  const status = axiosErr.response?.status
+  if (status === 400) return axiosErr.response?.data?.detail ?? 'El archivo no es un PDF válido o excede el tamaño permitido.'
+  if (status === 503) return 'El servicio de OCR no está disponible en este momento. Intente más tarde.'
+  if (status !== undefined && status >= 500) return 'Error interno del servicio de minería al procesar el documento.'
+  return 'No se pudo conectar con el servicio de minería. Verifique la conexión.'
+}
 
-  // ── File loaded: avanza al paso 2 ────────────────────────────────────────
-  const handleFileLoaded = useCallback((file: File) => {
+export function CapturaOcrPage() {
+  const [step,      setStep]      = useState<OcrStep>('dropzone')
+  const [fileName,  setFileName]  = useState<string | null>(null)
+  const [ocrResult, setOcrResult] = useState<RespuestaOcrCedula | null>(null)
+  const [toast,     setToast]     = useState<ToastState | null>(null)
+  // Llave para forzar reset completo de OcrValidationForm
+  const [formKey,   setFormKey]   = useState(0)
+
+  // ── File loaded: sube el PDF a mineria (POST /ocr/procesar-cedula) ───────
+  const handleFileLoaded = useCallback(async (file: File) => {
     setFileName(file.name)
-    setTimeout(() => setStep('validation'), 800)
+    setStep('processing')
+    try {
+      const result = await procesarCedulaOcr(file)
+      setOcrResult(result)
+      setStep('validation')
+    } catch (err: unknown) {
+      setToast({ message: mapOcrErrorToFriendlyMessage(err), variant: 'error' })
+      setStep('dropzone')
+      setFileName(null)
+    }
   }, [])
 
   // ── Reset: vuelve al paso 1 y resetea el formulario ───────────────────────
   function handleReset() {
     setStep('dropzone')
     setFileName(null)
+    setOcrResult(null)
     setFormKey((k) => k + 1) // Fuerza re-montaje del OcrValidationForm
     setToast(null)
   }
@@ -60,8 +82,8 @@ export function CapturaOcrPage() {
     setTimeout(() => setToast(null), 5000)
   }
 
-  // Cuenta cuántos campos tienen baja confianza (hardcodeado: apellidoPaterno)
-  const lowConfidenceCount = step === 'validation' ? 1 : 0
+  // Cuenta cuántos campos necesitan revisión, según el propio resumen de mineria
+  const lowConfidenceCount = ocrResult?.resumen.necesitan_revision ?? 0
 
   return (
     <div className="h-full flex flex-col animate-fade-in">
@@ -92,6 +114,15 @@ export function CapturaOcrPage() {
         </div>
       )}
 
+      {/* ── Paso intermedio: procesando OCR en mineria (~5-10s/documento) ── */}
+      {step === 'processing' && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3">
+          <Loader2 size={32} className="animate-spin text-[#006657]" />
+          <p className="text-sm text-gray-600 font-medium">Procesando documento con OCR...</p>
+          <p className="text-xs text-gray-400">{fileName}</p>
+        </div>
+      )}
+
       {/* ── Paso 2: Two-column validation ────────────────────────────── */}
       {step === 'validation' && (
         <div className="flex-1 flex flex-col overflow-hidden gap-4">
@@ -105,6 +136,7 @@ export function CapturaOcrPage() {
             <DocumentViewer />
             <OcrValidationForm
               key={formKey}
+              ocrResult={ocrResult}
               onSuccess={handleSaveSuccess}
               onError={handleSaveError}
               onCancel={handleReset}
