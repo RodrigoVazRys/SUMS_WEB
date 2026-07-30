@@ -70,13 +70,21 @@ export async function procesarCedulaOcr(archivo: File): Promise<RespuestaOcrCedu
 /** POST /riesgo/predecir — todos los campos de FamiliaFeatures tienen default en el backend. */
 export async function predecirRiesgo(payload: Partial<FamiliaFeatures>): Promise<RiesgoPrediccion> {
   const { data } = await mineriaApi.post<RiesgoPrediccion>('/riesgo/predecir', payload)
+  if (data.prioridad_visita === 'URGENTE') {
+    data.nivel_riesgo = 'ALTO'
+  }
   return data
 }
 
 /** GET /riesgo/lista?top=N — lista priorizada de visitas domiciliarias. */
 export async function getListaVisitas(top: number = 20): Promise<VisitaPrioritaria[]> {
   const { data } = await mineriaApi.get<VisitaPrioritaria[]>('/riesgo/lista', { params: { top } })
-  return data
+  return data.map(v => {
+    if (v.prioridad_visita === 'URGENTE') {
+      v.nivel_riesgo = 'ALTO'
+    }
+    return v
+  })
 }
 
 /** GET /riesgo/metricas — desempeño comparado de los modelos entrenados. */
