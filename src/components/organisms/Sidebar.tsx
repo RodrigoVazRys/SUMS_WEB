@@ -2,14 +2,14 @@
 // Panel de navegación lateral con RBAC.
 // v3: Sección "Análisis" con 4 módulos de estadísticas (Admin + SuperAdmin).
 
-import { LayoutDashboard, ScanLine, LogOut, Users, Building2, Activity, Users2, HeartPulse, Home, BarChart2, ShieldAlert, Search } from 'lucide-react'
+import { LayoutDashboard, LogOut, Users, Building2, Activity, Users2, HeartPulse, Home, BarChart2, Search } from 'lucide-react'
 import { Logo } from '../atoms/Logo'
 import { NavItem } from '../molecules/NavItem'
 import { useAuth } from '../../contexts/AuthContext'
 
 const BASE_NAV_ITEMS = [
-  { to: '/dashboard',   label: 'Inicio',          icon: LayoutDashboard },
-  { to: '/captura-ocr', label: 'Captura Cédulas', icon: ScanLine        },
+  { to: '/dashboard',       label: 'Inicio',            icon: LayoutDashboard },
+  { to: '/busqueda',        label: 'Búsqueda de Notas', icon: Search          },
 ]
 
 const ANALYTICS_NAV_ITEMS = [
@@ -17,11 +17,6 @@ const ANALYTICS_NAV_ITEMS = [
   { to: '/estadisticas/demografia', label: 'Demografía', icon: Users2      },
   { to: '/estadisticas/salud',      label: 'Salud',      icon: HeartPulse  },
   { to: '/estadisticas/vivienda',   label: 'Vivienda',   icon: Home        },
-]
-
-const MINERIA_NAV_ITEMS = [
-  { to: '/mineria/riesgo',   label: 'Riesgo Familiar',  icon: ShieldAlert },
-  { to: '/mineria/busqueda', label: 'Búsqueda de Notas', icon: Search      },
 ]
 
 const SUPERADMIN_NAV_ITEMS = [
@@ -84,11 +79,7 @@ export function Sidebar({ onLogout, isOpen }: SidebarProps) {
             <NavItem key={item.to} to={item.to} label={item.label} icon={item.icon} />
           ))}
 
-          {/* Sección Minería (Admin + SuperAdmin) */}
-          <NavSectionLabel label="Minería" />
-          {MINERIA_NAV_ITEMS.map((item) => (
-            <NavItem key={item.to} to={item.to} label={item.label} icon={item.icon} />
-          ))}
+
 
           {/* Rutas exclusivas de SuperAdmin */}
           {isSuperAdmin && (

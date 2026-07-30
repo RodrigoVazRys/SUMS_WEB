@@ -11,14 +11,12 @@ import { ProtectedRoute } from './router/ProtectedRoute'
 import { AdminLayout } from './layouts/AdminLayout'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
-import { CapturaOcrPage } from './pages/CapturaOcrPage'
 import { GestionUsuariosPage } from './pages/GestionUsuariosPage'
 import { CentrosSaludPage } from './pages/CentrosSaludPage'
 import { EstadisticasOperacionPage } from './pages/EstadisticasOperacionPage'
 import { EstadisticasDemografiaPage } from './pages/EstadisticasDemografiaPage'
 import { EstadisticasSaludPage } from './pages/EstadisticasSaludPage'
 import { EstadisticasViviendaPage } from './pages/EstadisticasViviendaPage'
-import { RiesgoPage } from './pages/RiesgoPage'
 import { BusquedaPage } from './pages/BusquedaPage'
 
 export default function App() {
@@ -33,7 +31,7 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AdminLayout />}>
               <Route path="/dashboard"   element={<DashboardPage />}   />
-              <Route path="/captura-ocr" element={<CapturaOcrPage />}  />
+              <Route path="/captura-ocr" element={<Navigate to="/dashboard" replace />}  />
 
               {/* ── Módulos de Estadísticas ─────────────────── */}
               <Route path="/estadisticas/operacion"  element={<EstadisticasOperacionPage />}  />
@@ -42,8 +40,8 @@ export default function App() {
               <Route path="/estadisticas/vivienda"   element={<EstadisticasViviendaPage />}   />
 
               {/* ── Módulos de Minería (subcomponentes B/C) ─── */}
-              <Route path="/mineria/riesgo"    element={<RiesgoPage />}    />
-              <Route path="/mineria/busqueda"  element={<BusquedaPage />}  />
+              <Route path="/mineria/riesgo"    element={<Navigate to="/dashboard" replace />}    />
+              <Route path="/busqueda"          element={<BusquedaPage />}  />
 
               {/* ── SuperAdmin only ──────────────────────── */}
               <Route element={<ProtectedRoute allowedRoles={['SuperAdmin']} />}>
