@@ -80,7 +80,35 @@ api.interceptors.request.use(
 
 // ─── Response interceptor — handle 401 ───────────────────────────────────────
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // FALLBACK TO MOCK DATA IF API IS EMPTY (Para exposiciones)
+    const url = response.config?.url || ''
+    if (url.includes('/estadisticas') || url.includes('/vacunaciones')) {
+      const data = response.data
+      let isEmpty = false
+      
+      if (Array.isArray(data) && data.length === 0) {
+        isEmpty = true
+      } else if (data && typeof data === 'object' && !Array.isArray(data)) {
+        // Objeto vacío o lleno de ceros/arreglos vacíos
+        const values = Object.values(data)
+        if (values.length > 0 && values.every(v => v === 0 || v === null || v === '' || (Array.isArray(v) && v.length === 0))) {
+          isEmpty = true
+        } else if (Object.keys(data).length === 0) {
+          isEmpty = true
+        }
+      }
+      
+      if (isEmpty) {
+        const mockData = getMockDataForUrl(url)
+        if (mockData) {
+          console.warn(`[SUMS API] Endpoint ${url} retornó vacío. Usando datos simulados para la expo.`)
+          response.data = mockData
+        }
+      }
+    }
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem(TOKEN_KEY)
