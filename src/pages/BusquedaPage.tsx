@@ -7,11 +7,11 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Search, Loader2, FileSearch, AlertCircle, Database, StickyNote, MapPin } from 'lucide-react'
-import { Select } from '../components/atoms/Select'
+
 import { Button } from '../components/atoms/Button'
 import { Toast } from '../components/molecules/Toast'
 import type { ToastVariant } from '../components/molecules/Toast'
-import type { SelectOption } from '../components/atoms/Select'
+
 import { buscarNotas, buscarEstructurado } from '../services/mineriaApi'
 import type { MotorBusqueda, ResultadoBusqueda, ResultadoBusquedaEstructurada } from '../types/mineria.types'
 
@@ -20,11 +20,9 @@ interface ToastState {
   variant: ToastVariant
 }
 
-const MOTOR_OPTIONS: SelectOption[] = [
-  { value: 'bm25',      label: 'BM25'               },
-  { value: 'tfidf',     label: 'TF-IDF'             },
-  { value: 'semantico', label: 'Semántico (opcional)' },
-]
+// Motor y k están hardcodeados; no se exponen en la UI (simplificación solicitada)
+const DEFAULT_MOTOR: MotorBusqueda = 'bm25'
+const DEFAULT_K = 5
 
 const MAX_QUERY_LENGTH = 500
 
@@ -39,9 +37,10 @@ type ModoBusqueda = 'notas' | 'estructurado'
 export function BusquedaPage() {
   const [modo, setModo] = useState<ModoBusqueda>('notas')
 
-  const [q,     setQ]     = useState('')
-  const [motor, setMotor] = useState<MotorBusqueda>('bm25')
-  const [k,     setK]     = useState(5)
+  const [q, setQ] = useState('')
+  // motor y k son internos, no expuestos en la UI
+  const motor = DEFAULT_MOTOR
+  const k     = DEFAULT_K
 
   const [isSearching,   setIsSearching]   = useState(false)
   const [resultados,    setResultados]    = useState<ResultadoBusqueda[]>([])
@@ -171,7 +170,7 @@ export function BusquedaPage() {
         onSubmit={handleBuscar}
         className="bg-white rounded-xl border border-gray-200 shadow-sm p-5"
       >
-        <div className={`grid grid-cols-1 gap-3 items-end ${modo === 'notas' ? 'md:grid-cols-[1fr_auto_auto_auto]' : 'md:grid-cols-[1fr_auto_auto]'}`}>
+        <div className="grid grid-cols-1 gap-3 items-end md:grid-cols-[1fr_auto]">
           <div className="space-y-1">
             <label htmlFor="busqueda-q" className="text-xs font-semibold text-gray-600 uppercase tracking-wide block">
               Consulta
@@ -184,36 +183,6 @@ export function BusquedaPage() {
               maxLength={MAX_QUERY_LENGTH}
               placeholder={modo === 'notas' ? 'Ej. paciente con hipertensión y diabetes...' : 'Ej. sarampión, sin vacunar, mascotas, embarazo, Centro...'}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-200"
-            />
-          </div>
-
-          {modo === 'notas' && (
-            <div className="space-y-1">
-              <label htmlFor="busqueda-motor" className="text-xs font-semibold text-gray-600 uppercase tracking-wide block">
-                Motor
-              </label>
-              <Select
-                id="busqueda-motor"
-                options={MOTOR_OPTIONS}
-                value={motor}
-                onChange={(e) => setMotor(e.target.value as MotorBusqueda)}
-                className="min-w-[9rem]"
-              />
-            </div>
-          )}
-
-          <div className="space-y-1">
-            <label htmlFor="busqueda-k" className="text-xs font-semibold text-gray-600 uppercase tracking-wide block">
-              Resultados (k)
-            </label>
-            <input
-              id="busqueda-k"
-              type="number"
-              min={1}
-              max={50}
-              value={k}
-              onChange={(e) => setK(Number(e.target.value) || 1)}
-              className="w-24 px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-200"
             />
           </div>
 

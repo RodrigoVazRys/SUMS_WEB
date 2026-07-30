@@ -18,6 +18,7 @@ import {
   HeartPulse, Cigarette, Accessibility, ShieldCheck,
   Apple, Stethoscope, SmilePlus, Syringe, AlertCircle,
 } from 'lucide-react'
+import { renderPercentLegend } from '../utils/chartHelpers'
 import {
   getSaludEnfermedadesCronicas,
   getSaludToxicomanias,
@@ -392,7 +393,7 @@ export function EstadisticasSaludPage() {
                   </Pie>
                   <Tooltip formatter={(v) => [(v as number).toLocaleString('es-MX'), 'Personas']}
                     contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }} />
-                  <Legend wrapperStyle={{ fontSize: 10 }} iconType="circle" iconSize={7} />
+                  <Legend content={renderPercentLegend} />
                 </PieChart>
               </ResponsiveContainer>
             </>

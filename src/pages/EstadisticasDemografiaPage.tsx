@@ -15,6 +15,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
 import { Users2, BookOpen, Globe, DollarSign, Briefcase, Heart, AlertCircle } from 'lucide-react'
+import { renderPercentLegend } from '../utils/chartHelpers'
 import {
   getDemografiaPiramide,
   getDemografiaGenero,
@@ -236,7 +237,7 @@ export function EstadisticasDemografiaPage() {
                     </Pie>
                     <Tooltip formatter={(v) => [(v as number).toLocaleString('es-MX'), 'Personas']}
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" iconSize={8} />
+                    <Legend content={renderPercentLegend} />
                   </PieChart>
                 </ResponsiveContainer>
               </>
@@ -303,8 +304,8 @@ export function EstadisticasDemografiaPage() {
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={ingreso} layout="vertical" margin={{ left: 0, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <YAxis type="category" dataKey="rango" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} width={90} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} label={{ value: 'Cantidad de personas', position: 'insideBottom', offset: -5, fontSize: 10, fill: '#9ca3af' }} />
+                <YAxis type="category" dataKey="rango" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} width={90} label={{ value: 'Rango de Ingreso', angle: -90, position: 'insideLeft', fontSize: 10, fill: '#9ca3af', style: { textAnchor: 'middle' } }} />
                 <Tooltip formatter={(v) => [(v as number).toLocaleString('es-MX'), 'Personas']}
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }} />
                 <Bar dataKey="total" fill={GREEN} radius={[0, 4, 4, 0]} maxBarSize={24}>
@@ -325,7 +326,7 @@ export function EstadisticasDemografiaPage() {
                 </Pie>
                 <Tooltip formatter={(v) => [(v as number).toLocaleString('es-MX'), 'Personas']}
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }} />
-                <Legend wrapperStyle={{ fontSize: 10 }} iconType="circle" iconSize={7} />
+                <Legend content={renderPercentLegend} />
               </PieChart>
             </ResponsiveContainer>
           )}

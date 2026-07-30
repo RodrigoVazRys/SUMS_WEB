@@ -5,6 +5,7 @@
 //   - Interceptor de respuestas: en 401 limpia sesión y redirige a /login
 
 import axios from 'axios'
+import { getMockDataForUrl } from './mockApi'
 import type {
   LoginRequest,
   LoginResponse,
@@ -66,13 +67,16 @@ const api = axios.create({
 })
 
 // ─── Request interceptor — inject JWT ────────────────────────────────────────
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY)
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error),
+)
 
 // ─── Response interceptor — handle 401 ───────────────────────────────────────
 api.interceptors.response.use(
@@ -83,6 +87,23 @@ api.interceptors.response.use(
       localStorage.removeItem(AUTH_USER_KEY)
       window.location.href = '/login'
     }
+
+    // FALLBACK TO MOCK DATA IF API FAILS (Para exposiciones)
+    const url = error.config?.url || ''
+    if (url.includes('/estadisticas') || url.includes('/vacunaciones')) {
+      const mockData = getMockDataForUrl(url)
+      if (mockData) {
+        console.warn(`[SUMS API] Endpoint ${url} failed. Usando datos simulados para la expo.`)
+        return Promise.resolve({
+          data: mockData,
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: error.config,
+        })
+      }
+    }
+
     return Promise.reject(error)
   },
 )
@@ -177,12 +198,8 @@ export async function getPersonas(): Promise<Persona[]> {
   return data
 }
 
-export async function getVacunacionesPorGenero(
-  genero: 'masculino' | 'femenino',
-): Promise<VacunacionPorSexoDTO[]> {
-  const { data } = await api.get<VacunacionPorSexoDTO[]>(`/vacunaciones/por-sexo/${genero}`)
-  return data
-}
+// getVacunacionesPorGenero era un duplicado incorrecto que enviaba 'masculino'/'femenino'
+// directamente en la URL, causando 400 Bad Request. Se elimina; usar getVacunacionesPorSexo('M'/'F').
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ─── ESTADÍSTICAS — OPERACIÓN (8 endpoints web) ───────────────────────────────

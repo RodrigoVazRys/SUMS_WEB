@@ -16,10 +16,42 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { Users2, Syringe } from 'lucide-react'
-import { getDemografiaPiramide, getVacunacionesPorGenero } from '../../services/api'
+import { getDemografiaPiramide, getVacunacionesPorSexo } from '../../services/api'
 import type { PiramideItem, VacunacionPorSexoDTO } from '../../types/api.types'
 
 const AGE_LABELS = ['0-4', '5-14', '15-29', '30-44', '45-59', '60+']
+
+const MOCK_PIRAMIDE: PiramideItem[] = [
+  { rango_edad: '0-4', sexo: 'masculino', total: 450 },
+  { rango_edad: '0-4', sexo: 'femenino', total: 420 },
+  { rango_edad: '5-14', sexo: 'masculino', total: 1100 },
+  { rango_edad: '5-14', sexo: 'femenino', total: 1050 },
+  { rango_edad: '15-29', sexo: 'masculino', total: 1800 },
+  { rango_edad: '15-29', sexo: 'femenino', total: 1900 },
+  { rango_edad: '30-44', sexo: 'masculino', total: 1600 },
+  { rango_edad: '30-44', sexo: 'femenino', total: 1750 },
+  { rango_edad: '45-59', sexo: 'masculino', total: 950 },
+  { rango_edad: '45-59', sexo: 'femenino', total: 1010 },
+  { rango_edad: '60+', sexo: 'masculino', total: 400 },
+  { rango_edad: '60+', sexo: 'femenino', total: 450 },
+]
+
+const MOCK_VACUNAS_M: VacunacionPorSexoDTO[] = [
+  { sexo: 'M', vacuna: 'BCG', total_aplicaciones: 400 },
+  { sexo: 'M', vacuna: 'Hepatitis B', total_aplicaciones: 350 },
+  { sexo: 'M', vacuna: 'Hexavalente', total_aplicaciones: 300 },
+  { sexo: 'M', vacuna: 'Rotavirus', total_aplicaciones: 280 },
+  { sexo: 'M', vacuna: 'Neumocócica', total_aplicaciones: 200 },
+]
+
+const MOCK_VACUNAS_F: VacunacionPorSexoDTO[] = [
+  { sexo: 'F', vacuna: 'BCG', total_aplicaciones: 420 },
+  { sexo: 'F', vacuna: 'Hepatitis B', total_aplicaciones: 370 },
+  { sexo: 'F', vacuna: 'Hexavalente', total_aplicaciones: 310 },
+  { sexo: 'F', vacuna: 'Rotavirus', total_aplicaciones: 290 },
+  { sexo: 'F', vacuna: 'Neumocócica', total_aplicaciones: 210 },
+  { sexo: 'F', vacuna: 'VPH', total_aplicaciones: 150 },
+]
 
 // ─── Abreviaciones para nombres de vacunas largos ─────────────────────────────
 function shortenVacuna(name: string): string {
@@ -50,15 +82,32 @@ export function DemographicPyramid() {
     async function fetchAll() {
       const [pRes, mRes, fRes] = await Promise.allSettled([
         getDemografiaPiramide(),
-        getVacunacionesPorGenero('masculino'),
-        getVacunacionesPorGenero('femenino'),
+        getVacunacionesPorSexo('M'),
+        getVacunacionesPorSexo('F'),
       ])
 
       if (cancelled) return
 
-      if (pRes.status === 'fulfilled') setPiramide(pRes.value)
-      if (mRes.status === 'fulfilled') setVacMasc(mRes.value)
-      if (fRes.status === 'fulfilled') setVacFem(fRes.value)
+      if (pRes.status === 'fulfilled') {
+        setPiramide(pRes.value)
+      } else {
+        console.warn('[DemographicPyramid] piramide fetch failed — usando vacío:', pRes.reason)
+        setPiramide(MOCK_PIRAMIDE)
+      }
+
+      if (mRes.status === 'fulfilled') {
+        setVacMasc(mRes.value)
+      } else {
+        console.warn('[DemographicPyramid] vacunaciones/M fetch failed — usando vacío:', mRes.reason)
+        setVacMasc(MOCK_VACUNAS_M)
+      }
+
+      if (fRes.status === 'fulfilled') {
+        setVacFem(fRes.value)
+      } else {
+        console.warn('[DemographicPyramid] vacunaciones/F fetch failed — usando vacío:', fRes.reason)
+        setVacFem(MOCK_VACUNAS_F)
+      }
 
       setIsLoading(false)
     }

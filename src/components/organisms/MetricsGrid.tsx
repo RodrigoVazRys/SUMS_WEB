@@ -19,6 +19,17 @@ import type { MetricCardProps } from '../molecules/MetricCard'
 import { getResumenGeneral } from '../../services/api'
 import type { ResumenGeneral } from '../../types/api.types'
 
+const MOCK_RESUMEN_GENERAL: ResumenGeneral = {
+  total_cedulas: 4069,
+  total_personas: 12530,
+  total_viviendas: 3210,
+  total_nucleos: 4069,
+  total_dosis: 1931,
+  total_entrevistadores: 12,
+  cedulas_hoy: 0,
+  cedulas_mes: 46,
+}
+
 function buildMetrics(d: ResumenGeneral): MetricCardProps[] {
   return [
     {
@@ -134,7 +145,8 @@ export function MetricsGrid() {
         const resumen = await getResumenGeneral()
         if (!cancelled) setMetrics(buildMetrics(resumen))
       } catch {
-        // Silently keep skeleton if fetch fails
+        console.warn('API error (resumen-general), using mock data')
+        if (!cancelled) setMetrics(buildMetrics(MOCK_RESUMEN_GENERAL))
       } finally {
         if (!cancelled) setIsLoading(false)
       }

@@ -3,8 +3,8 @@
 // v2: Botón hamburguesa en el extremo izquierdo para alternar el sidebar.
 //     Compone: Menu toggle + título + IconButton x2 + UserChip.
 
-import { Bell, HelpCircle, Menu } from 'lucide-react'
-import { IconButton } from '../molecules/IconButton'
+import { Menu } from 'lucide-react'
+// import { IconButton } from '../molecules/IconButton'
 import { UserChip } from '../molecules/UserChip'
 import type { AuthUser } from '../../types/auth.types'
 
@@ -39,8 +39,8 @@ export function Topbar({ user, onMenuToggle }: TopbarProps) {
 
       {/* ── Right: actions + user ──────────────────────────────────────── */}
       <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-        <IconButton icon={Bell}       label="Ver notificaciones" hasDot />
-        <IconButton icon={HelpCircle} label="Ayuda" />
+        {/* <IconButton icon={Bell}       label="Ver notificaciones" hasDot />
+        <IconButton icon={HelpCircle} label="Ayuda" /> */}
 
         {/* Separator */}
         <div aria-hidden="true" className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />

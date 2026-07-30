@@ -10,7 +10,7 @@ import { getUsers, registerUser, updateUserRole } from '../services/api'
 import type { Usuario } from '../types/api.types'
 import { Toast } from '../components/molecules/Toast'
 import type { ToastVariant } from '../components/molecules/Toast'
-import { sanitizeUsuarioInput, validateUsuarioInstitucional, validateContrasena, CONTRASENA_MAX_LENGTH } from '../utils/validators'
+import { sanitizeUsuarioInput, validateUsuarioInstitucional, validateContrasena, CONTRASENA_MAX_LENGTH, sanitizeNombreInput, validateNombre, sanitizeCluesInput, validateClues } from '../utils/validators'
 
 // ─── Mapeo de rol ─────────────────────────────────────────────────────────────
 const ROL_LABELS: Record<number, { label: string; color: string }> = {
@@ -28,7 +28,13 @@ const ROL_OPTIONS = [
 ]
 
 interface ToastState { message: string; variant: ToastVariant }
-interface ModalRegisterForm { nombre_usuario: string; contrasena: string; rol_id: number }
+interface ModalRegisterForm {
+  nombre_usuario: string
+  contrasena: string
+  rol_id: number
+  nombre_completo: string
+  clues: string
+}
 
 export function GestionUsuariosPage() {
   const [users,       setUsers]       = useState<Usuario[]>([])
@@ -38,7 +44,7 @@ export function GestionUsuariosPage() {
   const [editingUser,  setEditingUser]  = useState<Usuario | null>(null)
   const [newRolId,     setNewRolId]     = useState<number>(2)
   const [isSaving,     setIsSaving]     = useState(false)
-  const [regForm,      setRegForm]      = useState<ModalRegisterForm>({ nombre_usuario: '', contrasena: '', rol_id: 2 })
+  const [regForm, setRegForm] = useState<ModalRegisterForm>({ nombre_usuario: '', contrasena: '', rol_id: 2, nombre_completo: '', clues: '' })
 
   function showToast(message: string, variant: ToastVariant = 'success') {
     setToast({ message, variant })
@@ -73,6 +79,22 @@ export function GestionUsuariosPage() {
       showToast(contrasenaCheck.error ?? 'Contraseña inválida.', 'error')
       return
     }
+    // Nombre completo: requerido si el rol es Admin (2)
+    if (regForm.nombre_completo.trim()) {
+      const nc = validateNombre(regForm.nombre_completo)
+      if (!nc.valid) { showToast(nc.error ?? 'Nombre completo inválido.', 'error'); return }
+    } else if (regForm.rol_id === 2) {
+      showToast('El Nombre Completo es obligatorio para el rol Admin.', 'error')
+      return
+    }
+    // CLUES: requerido si el rol es Admin (2)
+    if (regForm.clues.trim()) {
+      const cl = validateClues(regForm.clues)
+      if (!cl.valid) { showToast(cl.error ?? 'CLUES inválido.', 'error'); return }
+    } else if (regForm.rol_id === 2) {
+      showToast('El CLUES es obligatorio para el rol Admin.', 'error')
+      return
+    }
 
     const payload = { ...regForm, nombre_usuario: regForm.nombre_usuario.trim() }
     setIsSaving(true)
@@ -80,7 +102,7 @@ export function GestionUsuariosPage() {
       await registerUser(payload)
       showToast(`Usuario "${payload.nombre_usuario}" registrado exitosamente.`)
       setShowRegModal(false)
-      setRegForm({ nombre_usuario: '', contrasena: '', rol_id: 2 })
+      setRegForm({ nombre_usuario: '', contrasena: '', rol_id: 2, nombre_completo: '', clues: '' })
       fetchUsers()
     } catch {
       showToast('Error al registrar el usuario.', 'error')
@@ -296,6 +318,44 @@ export function GestionUsuariosPage() {
               </button>
             </div>
             <form onSubmit={handleRegister} className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block">
+                  Nombre Completo
+                  {regForm.rol_id === 2 && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                <input
+                  type="text"
+                  value={regForm.nombre_completo}
+                  onChange={(e) => setRegForm((f) => ({ ...f, nombre_completo: sanitizeNombreInput(e.target.value) }))}
+                  placeholder="Nombre Apellido Apellido"
+                  required={regForm.rol_id === 2}
+                  maxLength={100}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+                {regForm.rol_id === 2 && (
+                  <p className="text-[11px] text-amber-600">Requerido para el rol Admin.</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block">
+                  CLUES
+                  {regForm.rol_id === 2 && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                <input
+                  type="text"
+                  value={regForm.clues}
+                  onChange={(e) => setRegForm((f) => ({ ...f, clues: sanitizeCluesInput(e.target.value) }))}
+                  placeholder="CS071400001"
+                  required={regForm.rol_id === 2}
+                  maxLength={11}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+                {regForm.rol_id === 2 ? (
+                  <p className="text-[11px] text-amber-600">Requerido para el rol Admin (2 letras + 9 dígitos).</p>
+                ) : (
+                  <p className="text-[11px] text-gray-400">Opcional para otros roles (ej. CS071400001).</p>
+                )}
+              </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block">
                   Nombre de usuario

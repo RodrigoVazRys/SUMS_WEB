@@ -365,7 +365,7 @@ export function RiesgoPage() {
     }
   }
 
-  const visitaColumns = visitas.length > 0 ? Object.keys(visitas[0]) : []
+  const visitaColumns = visitas.length > 0 ? Object.keys(visitas[0]).filter(k => k !== 'probabilidad_alto' && k !== 'score_total') : []
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -438,8 +438,8 @@ export function RiesgoPage() {
                   barCategoryGap="25%"
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <YAxis type="category" dataKey="nivel" width={50} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} label={{ value: 'Cantidad de Familias', position: 'insideBottom', offset: -5, fontSize: 10, fill: '#9ca3af' }} />
+                  <YAxis type="category" dataKey="nivel" width={50} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} label={{ value: 'Nivel', angle: -90, position: 'insideLeft', fontSize: 10, fill: '#9ca3af', style: { textAnchor: 'middle' } }} />
                   <Tooltip
                     contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
                     cursor={{ fill: '#f9fafb' }}
@@ -641,29 +641,9 @@ export function RiesgoPage() {
                   {resultado.nivel_riesgo}
                 </span>
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-500">Probabilidad de riesgo alto</span>
-                  <span className="text-sm font-bold" style={{ color: NIVEL_RIESGO_CONFIG[resultado.nivel_riesgo]?.bar ?? '#6b7280' }}>
-                    {Math.round(resultado.probabilidad_alto * 100)}%
-                  </span>
-                </div>
-                <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: `${Math.round(resultado.probabilidad_alto * 100)}%`,
-                      backgroundColor: NIVEL_RIESGO_CONFIG[resultado.nivel_riesgo]?.bar ?? '#6b7280',
-                    }}
-                  />
-                </div>
-              </div>
               {resultado.prioridad_visita !== 'URGENTE' && (
                 <p className="text-[11px] text-gray-500">{resultado.motivo_prioridad}</p>
               )}
-              <p className="text-[10px] text-gray-400 pt-1 border-t border-gray-100">
-                Modelo: <span className="font-semibold text-gray-600">{resultado.modelo}</span>
-              </p>
             </div>
           )}
         </div>

@@ -19,6 +19,7 @@ import {
   Activity, Users, TrendingUp, MapPin, Building2,
   Map, Home, AlertCircle,
 } from 'lucide-react'
+import { renderPercentLegend } from '../utils/chartHelpers'
 import {
   getProductividadEntrevistadores,
   getCedulasSerie,
@@ -228,7 +229,7 @@ export function EstadisticasOperacionPage() {
                   formatter={(v) => [(v as number).toLocaleString('es-MX'), 'Cédulas']}
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
                 />
-                <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" iconSize={8} />
+                <Legend content={renderPercentLegend} />
               </PieChart>
             </ResponsiveContainer>
           )}

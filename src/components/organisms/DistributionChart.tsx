@@ -117,6 +117,7 @@ export function DistributionChart() {
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
+              label={{ value: 'Cantidad', position: 'insideBottom', offset: -5, fontSize: 10, fill: '#9ca3af' }}
             />
             <YAxis
               type="category"
@@ -125,6 +126,7 @@ export function DistributionChart() {
               tick={{ fontSize: 10, fill: '#6b7280' }}
               axisLine={false}
               tickLine={false}
+              label={{ value: 'Categoría', angle: -90, position: 'insideLeft', fontSize: 10, fill: '#9ca3af', style: { textAnchor: 'middle' } }}
             />
             <Tooltip
               contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
