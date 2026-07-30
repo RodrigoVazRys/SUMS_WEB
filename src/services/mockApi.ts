@@ -120,7 +120,7 @@ export const getMockDataForUrl = (url: string): any => {
       { nombre: 'Obesidad', personas: 854 },
     ]
   }
-  if (url.includes('/estadisticas/salud/toxicomania')) {
+  if (url.includes('/estadisticas/salud/toxicomanias')) {
     return [
       { nombre: 'Tabaquismo', personas: 2015 },
       { nombre: 'Alcoholismo', personas: 1450 },
@@ -134,7 +134,7 @@ export const getMockDataForUrl = (url: string): any => {
       ]
     }
   }
-  if (url.includes('/estadisticas/salud/salud-preventiva')) {
+  if (url.includes('/estadisticas/salud/preventiva')) {
     return {
       resumen: {
         tamizaje_cervico_uterino: 4500,
